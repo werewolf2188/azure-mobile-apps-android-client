@@ -48,14 +48,11 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestSt
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util.IPredicate;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.StringIdJsonElement;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.StringIdRoundTripTableElement;
-import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.SystemPropertiesTestData;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 import static com.microsoft.windowsazure.mobileservices.table.query.QueryOperations.field;
 import static com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util.compare;
@@ -80,17 +77,7 @@ public class SystemPropertiesTests extends TestGroup {
             this.addTest(createCustomSystemPropertiesTest("Operations with Custom System Properties set on Table"));
         }
 
-        if (isNetBackend) {
-            for (String systemProperties : SystemPropertiesTestData.ValidSystemPropertyQueryStringsForNet) {
-                this.addTest(createQueryParameterSystemPropertiesTest("Operations with Query Parameter System Properties set on Table - " + systemProperties,
-                        systemProperties));
-            }
-        } else {
-            for (String systemProperties : SystemPropertiesTestData.ValidSystemPropertyQueryStringsForNode) {
-                this.addTest(createQueryParameterSystemPropertiesTest("Operations with Query Parameter System Properties set on Table - " + systemProperties,
-                        systemProperties));
-            }
-        }
+        this.addTest(createQueryParameterSystemPropertiesTest("Operations with Query Parameter System Properties set on Table", "a=a"));
         this.addTest(createMergeConflictTest("Merge Conflict"));
         this.addTest(createMergeConflictGenericTest("Merge Conflict Generic"));
 
@@ -124,7 +111,7 @@ public class SystemPropertiesTests extends TestGroup {
                             final StringIdRoundTripTableElement responseElement1 = insert(table, element);
 
                             log("Verify system properties are not null");
-                            verifySystemProperties("Insert response", responseElement1, isNetBackend) ;
+                            verifySystemProperties("Insert response", responseElement1, isNetBackend);
 
                             log("Read table");
 
@@ -353,7 +340,6 @@ public class SystemPropertiesTests extends TestGroup {
                             systemProperties2.add(MobileServiceSystemProperty.Version);
                             systemProperties2.add(MobileServiceSystemProperty.CreatedAt);
 
-                            table.setSystemProperties(systemProperties2);
 
                             log("Insert element 2 with Custom System Properties - Version|CreatedAt - " + element2.toString());
                             StringIdRoundTripTableElement responseElement2 = insert(table, element2);
@@ -366,8 +352,6 @@ public class SystemPropertiesTests extends TestGroup {
                             systemProperties3.add(MobileServiceSystemProperty.UpdatedAt);
                             systemProperties3.add(MobileServiceSystemProperty.Deleted);
 
-
-                            table.setSystemProperties(systemProperties3);
 
                             log("Filter element2 id with Custom System Properties - Version|UpdatedAt");
                             List<StringIdRoundTripTableElement> responseElements3 = read(table, field("id").eq().val(element2.id));
@@ -384,7 +368,6 @@ public class SystemPropertiesTests extends TestGroup {
 
                             EnumSet<MobileServiceSystemProperty> systemProperties4 = EnumSet.noneOf(MobileServiceSystemProperty.class);
 
-                            table.setSystemProperties(systemProperties4);
 
                             log("Lookup element2 id with No System Properties");
                             StringIdRoundTripTableElement responseElement4 = lookUp(table, element2.id);
@@ -441,14 +424,14 @@ public class SystemPropertiesTests extends TestGroup {
                             List<Pair<String, String>> userParameters = new ArrayList<Pair<String, String>>();
                             userParameters.add(new Pair<String, String>(key, value));
 
-                            boolean shouldHaveCreatedAt = value.toLowerCase(Locale.getDefault()).contains("created");
-                            boolean shouldHaveUpdatedAt = value.toLowerCase(Locale.getDefault()).contains("updated");
-                            boolean shouldHaveVersion = value.toLowerCase(Locale.getDefault()).contains("version");
-                            boolean shouldHaveDeleted = value.toLowerCase(Locale.getDefault()).contains("deleted");
+                            boolean shouldHaveCreatedAt;
+                            boolean shouldHaveUpdatedAt;
+                            boolean shouldHaveVersion;
+                            boolean shouldHaveDeleted;
 
-                            if (value.trim().equals("*")) {
-                                shouldHaveVersion = shouldHaveUpdatedAt = shouldHaveCreatedAt = shouldHaveDeleted = true;
-                            }
+
+                            shouldHaveVersion = shouldHaveUpdatedAt = shouldHaveCreatedAt = shouldHaveDeleted = true;
+
 
                             StringIdRoundTripTableElement element1 = new StringIdRoundTripTableElement(true);
                             element1.id = UUID.randomUUID().toString();
@@ -559,7 +542,6 @@ public class SystemPropertiesTests extends TestGroup {
                             EnumSet<MobileServiceSystemProperty> systemProperties = EnumSet.noneOf(MobileServiceSystemProperty.class);
                             systemProperties.add(MobileServiceSystemProperty.Version);
 
-                            jsonTable.setSystemProperties(systemProperties);
 
                             StringIdJsonElement element1 = new StringIdJsonElement(true);
 
@@ -717,7 +699,6 @@ public class SystemPropertiesTests extends TestGroup {
                             EnumSet<MobileServiceSystemProperty> systemProperties = EnumSet.noneOf(MobileServiceSystemProperty.class);
                             systemProperties.add(MobileServiceSystemProperty.Version);
 
-                            jsonTable.setSystemProperties(systemProperties);
 
                             JsonObject jsonElement1 = client.getGsonBuilder().create().toJsonTree(element1).getAsJsonObject();
 
