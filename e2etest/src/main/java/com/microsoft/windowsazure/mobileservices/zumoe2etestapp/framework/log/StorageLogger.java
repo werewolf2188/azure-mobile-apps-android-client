@@ -39,14 +39,14 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
-public class SunlightLogger {
+public class StorageLogger {
 
     private String mToken;
     private String mContainerUrl;
     private String mRuntime;
     private String mPlatform = "Android";
 
-    public SunlightLogger(String containerUrl, String base64token, String runtime) {
+    public StorageLogger(String containerUrl, String base64token, String runtime) {
         mToken = decodeToken(base64token);
         mContainerUrl = containerUrl;
         mRuntime = runtime;

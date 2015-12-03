@@ -55,7 +55,7 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestGr
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestResult;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestStatus;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util;
-import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.log.SunlightLogger;
+import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.log.StorageLogger;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.ClientSDKLoginTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.CustomApiTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.EnhancedPushTests;
@@ -122,9 +122,9 @@ public class MainActivity extends Activity {
             mAutomationPreferences.put("pref_mobile_service_url", extras.getString("pref_mobile_service_url", ""));
             mAutomationPreferences.put("pref_google_userid", extras.getString("pref_google_userid", ""));
             mAutomationPreferences.put("pref_google_webapp_clientid", extras.getString("pref_google_webapp_clientid", ""));
-            mAutomationPreferences.put("pref_sunlight_runtime_version", extras.getString("pref_sunlight_runtime_version", ""));
-            mAutomationPreferences.put("pref_sunlight_container_url", extras.getString("pref_sunlight_container_url", ""));
-            mAutomationPreferences.put("pref_sunlight_base64_token", extras.getString("pref_sunlight_base64_token", ""));
+            mAutomationPreferences.put("pref_storage_runtime_version", extras.getString("pref_storage_runtime_version", ""));
+            mAutomationPreferences.put("pref_storage_container_url", extras.getString("pref_storage_container_url", ""));
+            mAutomationPreferences.put("pref_storage_base64_token", extras.getString("pref_storage_base64_token", ""));
         }
 
         mTestCaseList = (ListView) findViewById(R.id.testCaseList);
@@ -383,7 +383,7 @@ public class MainActivity extends Activity {
                                 tests.add(result.getTestCase());
                             }
 
-                            SunlightLogger logger = new SunlightLogger(getSunlightURL(), getSunlightBase64Token(), getSunlightRuntime());
+                            StorageLogger logger = new StorageLogger(getStorageURL(), getStorageBase64Token(), getStorageRuntime());
 
                             try {
                                 logger.reportResults(group.getFailedTestCount(), group.getPassedTestCount(), group.notRunTestCount(),
@@ -497,15 +497,15 @@ public class MainActivity extends Activity {
         return this.getPreference(Constants.PREFERENCE_MOBILE_SERVICE_URL);
     }
 
-    private String getSunlightURL() {
+    private String getStorageURL() {
         return this.getPreference(Constants.PREFERENCE_SUNLIGHT_CONTAINER_URL);
     }
 
-    private String getSunlightBase64Token() {
+    private String getStorageBase64Token() {
         return this.getPreference(Constants.PREFERENCE_SUNLIGHT_BASE64_TOKEN);
     }
 
-    private String getSunlightRuntime() {
+    private String getStorageRuntime() {
         return this.getPreference(Constants.PREFERENCE_SUNLIGHT_RUNTIME_VERSION);
     }
 
