@@ -19,7 +19,6 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -37,6 +36,8 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestEx
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestGroup;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestResult;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestStatus;
+
+import junit.framework.Assert;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -221,8 +222,12 @@ public class LoginTests extends TestGroup {
 
             @Override
             protected void executeTest(MobileServiceClient client, TestExecutionCallback callback) {
+                try {
+                    client.logout().get();
+                } catch (Exception ex) {
+                    Assert.fail(ex.getMessage());
+                }
 
-                client.logout();
                 log("Logged out");
                 TestResult result = new TestResult();
                 result.setTestCase(this);
@@ -293,7 +298,11 @@ public class LoginTests extends TestGroup {
             @Override
             protected void executeTest(MobileServiceClient client, TestExecutionCallback callback) {
 
-                client.logout();
+                try {
+                    client.logout().get();
+                } catch (Exception ex) {
+                    Assert.fail(ex.getMessage());
+                }
                 log("Logged out");
                 TestResult result = new TestResult();
                 result.setTestCase(this);
@@ -401,7 +410,7 @@ public class LoginTests extends TestGroup {
                 MobileServiceClient logClient = client.withFilter(new LogServiceFilter());
 
                 final MobileServiceJsonTable table = logClient.getTable(tableName);
-                final boolean crudShouldWork = tableType == TablePermission.Public || tableType == TablePermission.Application
+                final boolean crudShouldWork = tableType == TablePermission.Public || (tableType == TablePermission.Application && userIsAuthenticated)
                         || (tableType == TablePermission.User && userIsAuthenticated);
                 final JsonObject item = new JsonObject();
                 item.addProperty("name", "John Doe");
@@ -614,21 +623,9 @@ public class LoginTests extends TestGroup {
                                             return;
                                         }
 
-                                        if (isNetBackend) {
-                                            if (userIsAuthenticated && tableType == TablePermission.User) {
 
-                                                JsonArray jsonIdentities = jsonEntity.get("identities").getAsJsonArray();
-
-                                                if (jsonIdentities.size() == 0) {
-                                                    lastUserIdentityObject = null;
-                                                } else {
-                                                    lastUserIdentityObject = jsonIdentities.get(jsonIdentities.size() - 1).getAsJsonObject();
-                                                }
-                                            }
-                                        } else {
-                                            if (userIsAuthenticated && tableType == TablePermission.User) {
-                                                lastUserIdentityObject = new JsonParser().parse(jsonEntity.get("Identities").getAsString()).getAsJsonObject();
-                                            }
+                                        if (userIsAuthenticated && tableType == TablePermission.User) {
+                                            lastUserIdentityObject = new JsonParser().parse(jsonEntity.get("identities").getAsString()).getAsJsonObject();
                                         }
 
                                         log("delete item");

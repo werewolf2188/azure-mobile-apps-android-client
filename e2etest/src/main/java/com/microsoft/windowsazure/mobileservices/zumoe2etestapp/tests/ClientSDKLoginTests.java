@@ -76,7 +76,7 @@ public class ClientSDKLoginTests extends TestGroup {
                             } else {
                                 log("Logged in to the mobile service as " + user.getUserId());
                                 result.setStatus(TestStatus.Passed);
-                                client.logout();
+                                client.logout().get();
                             }
                         } catch (Exception exception) {
                             result.setException(exception);
