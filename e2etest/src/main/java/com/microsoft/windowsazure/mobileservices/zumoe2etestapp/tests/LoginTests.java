@@ -338,7 +338,7 @@ public class LoginTests extends TestGroup {
 
                 JsonObject lastIdentity = lastUserIdentityObject;
                 lastUserIdentityObject = null;
-                JsonObject providerIdentity = new JsonParser().parse(lastIdentity.get("Identities").getAsString()).getAsJsonObject()
+                JsonObject providerIdentity = new JsonParser().parse(lastIdentity.get("identities").getAsString()).getAsJsonObject()
                         .getAsJsonObject(provider.toString().toLowerCase(Locale.US));
                 if (providerIdentity == null) {
                     log("Cannot find identity for specified provider. Cannot run this test.");
@@ -350,7 +350,7 @@ public class LoginTests extends TestGroup {
                 }
 
                 JsonObject token = new JsonObject();
-                token.addProperty("access_token", providerIdentity.get("accessToken").getAsString());
+                token.addProperty("access_token", providerIdentity.get("access_token").getAsString());
 
                 boolean useEnumOverload = rndGen.nextBoolean();
                 if (useEnumOverload) {
@@ -533,7 +533,7 @@ public class LoginTests extends TestGroup {
                 }
 
                 JsonObject token = new JsonObject();
-                token.addProperty("access_token", providerIdentity.get("accessToken").getAsString());
+                token.addProperty("access_token", providerIdentity.get("access_token").getAsString());
                 UserAuthenticationCallback authCallback = new UserAuthenticationCallback() {
 
                     @Override
