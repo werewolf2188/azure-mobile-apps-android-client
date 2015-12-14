@@ -67,9 +67,7 @@ public class CustomApiTests extends TestGroup {
 
     private static final String PUBLIC_API_NAME = "PublicPermission";
     private static final String INEXISTENT_API_NAME = "InexistenApi";
-    private static final String APP_API_NAME = "ApplicationPermission";
     private static final String USER_API_NAME = "UserPermission";
-    private static final String ADMIN_API_NAME = "AdminPermission";
     private static final String MOVIEFINDER_API_NAME = "movieFinder";
     private Map<ApiPermissions, String> apiNames;
 
@@ -77,9 +75,7 @@ public class CustomApiTests extends TestGroup {
         super("Custom API tests");
 
         apiNames = new HashMap<CustomApiTests.ApiPermissions, String>();
-        apiNames.put(ApiPermissions.Admin, ADMIN_API_NAME);
         apiNames.put(ApiPermissions.User, USER_API_NAME);
-        apiNames.put(ApiPermissions.Application, APP_API_NAME);
         apiNames.put(ApiPermissions.Public, PUBLIC_API_NAME);
 
         Random rndGen = new Random();
@@ -165,7 +161,7 @@ public class CustomApiTests extends TestGroup {
 
                 try {
 
-                    ServiceFilterResponse response = mClient.invokeApi(APP_API_NAME, mContent, mHttpMethod, mHeaders, mQuery).get();
+                    ServiceFilterResponse response = mClient.invokeApi(PUBLIC_API_NAME, mContent, mHttpMethod, mHeaders, mQuery).get();
 
                     Exception ex = validateResponseHeaders(response);
                     if (ex != null) {
@@ -595,7 +591,7 @@ public class CustomApiTests extends TestGroup {
                     client = client.withFilter(new RemoveAuthenticationServiceFilter());
                 }
 
-                mExpected401 = permission == ApiPermissions.Admin || (permission == ApiPermissions.User && !isAuthenticated);
+                mExpected401 = (permission == ApiPermissions.User && !isAuthenticated);
                 mClient = client;
 
                 String method = createHttpMethod(rndGen);
@@ -1648,7 +1644,7 @@ public class CustomApiTests extends TestGroup {
                 mResult.setStatus(TestStatus.Passed);
                 mCallback = callback;
 
-                String apiUrl = APP_API_NAME;
+                String apiUrl = PUBLIC_API_NAME;
 
                 try {
 
@@ -1693,7 +1689,7 @@ public class CustomApiTests extends TestGroup {
                 mResult.setStatus(TestStatus.Passed);
                 mCallback = callback;
 
-                String apiUrl = APP_API_NAME + INEXISTENT_API_NAME;
+                String apiUrl = PUBLIC_API_NAME + INEXISTENT_API_NAME;
 
                 try {
 
@@ -1742,7 +1738,7 @@ public class CustomApiTests extends TestGroup {
     }
 
     private enum ApiPermissions {
-        Public, Application, User, Admin
+        Public, User
     }
 
     private enum DataFormat {

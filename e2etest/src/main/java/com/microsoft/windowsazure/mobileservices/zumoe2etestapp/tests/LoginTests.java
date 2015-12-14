@@ -48,9 +48,7 @@ import java.util.Random;
 
 public class LoginTests extends TestGroup {
 
-    protected static final String APPLICATION_PERMISSION_TABLE_NAME = "application";
     protected static final String USER_PERMISSION_TABLE_NAME = "authenticated";
-    protected static final String ADMIN_PERMISSION_TABLE_NAME = "admin";
 
     private static JsonObject lastUserIdentityObject;
 
@@ -62,9 +60,7 @@ public class LoginTests extends TestGroup {
         this.isNetBackend = isNetBackend;
 
         this.addTest(createLogoutTest());
-        this.addTest(createCRUDTest(APPLICATION_PERMISSION_TABLE_NAME, null, TablePermission.Application, false));
         this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, null, TablePermission.User, false));
-        this.addTest(createCRUDTest(ADMIN_PERMISSION_TABLE_NAME, null, TablePermission.Admin, false));
 
         int indexOfStartAuthenticationTests = this.getTestCases().size();
 
@@ -77,9 +73,7 @@ public class LoginTests extends TestGroup {
         for (MobileServiceAuthenticationProvider provider : MobileServiceAuthenticationProvider.values()) {
             this.addTest(createLogoutTest());
             this.addTest(createLoginTest(provider));
-            this.addTest(createCRUDTest(APPLICATION_PERMISSION_TABLE_NAME, provider, TablePermission.Application, true));
             this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
-            this.addTest(createCRUDTest(ADMIN_PERMISSION_TABLE_NAME, provider, TablePermission.Admin, true));
 
             if (!isNetBackend) {
                 if (providersWithRecycledTokenSupport.contains(provider)) {
@@ -336,10 +330,8 @@ public class LoginTests extends TestGroup {
                     return;
                 }
 
-                JsonObject lastIdentity = lastUserIdentityObject;
+                JsonObject providerIdentity = getProviderIdentity(lastUserIdentityObject, provider);
                 lastUserIdentityObject = null;
-                JsonObject providerIdentity = new JsonParser().parse(lastIdentity.get("identities").getAsString()).getAsJsonObject()
-                        .getAsJsonObject(provider.toString().toLowerCase(Locale.US));
                 if (providerIdentity == null) {
                     log("Cannot find identity for specified provider. Cannot run this test.");
                     TestResult testResult = new TestResult();
@@ -410,8 +402,7 @@ public class LoginTests extends TestGroup {
                 MobileServiceClient logClient = client.withFilter(new LogServiceFilter());
 
                 final MobileServiceJsonTable table = logClient.getTable(tableName);
-                final boolean crudShouldWork = tableType == TablePermission.Public || (tableType == TablePermission.Application && userIsAuthenticated)
-                        || (tableType == TablePermission.User && userIsAuthenticated);
+                final boolean crudShouldWork = tableType == TablePermission.Public || (tableType == TablePermission.User && userIsAuthenticated);
                 final JsonObject item = new JsonObject();
                 item.addProperty("name", "John Doe");
                 log("insert item");
@@ -520,9 +511,9 @@ public class LoginTests extends TestGroup {
                     return;
                 }
 
-                JsonObject lastIdentity = lastUserIdentityObject;
+                JsonObject providerIdentity = getProviderIdentity(lastUserIdentityObject, provider);
                 lastUserIdentityObject = null;
-                JsonObject providerIdentity = lastIdentity.getAsJsonObject(provider.toString().toLowerCase(Locale.US));
+
                 if (providerIdentity == null) {
                     log("Cannot find identity for specified provider. Cannot run this test.");
                     TestResult testResult = new TestResult();
@@ -581,8 +572,7 @@ public class LoginTests extends TestGroup {
                 MobileServiceClient logClient = client.withFilter(new LogServiceFilter());
 
                 final MobileServiceJsonTable table = logClient.getTable(tableName);
-                final boolean crudShouldWork = tableType == TablePermission.Public || tableType == TablePermission.Application
-                        || (tableType == TablePermission.User && userIsAuthenticated);
+                final boolean crudShouldWork = tableType == TablePermission.Public || (tableType == TablePermission.User && userIsAuthenticated);
                 final JsonObject item = new JsonObject();
                 item.addProperty("name", "John Doe");
                 log("insert item");
@@ -625,7 +615,7 @@ public class LoginTests extends TestGroup {
 
 
                                         if (userIsAuthenticated && tableType == TablePermission.User) {
-                                            lastUserIdentityObject = new JsonParser().parse(jsonEntity.get("identities").getAsString()).getAsJsonObject();
+                                            lastUserIdentityObject = jsonEntity;
                                         }
 
                                         log("delete item");
@@ -672,7 +662,15 @@ public class LoginTests extends TestGroup {
     }
 
     enum TablePermission {
-        Public, Application, User, Admin
+        Public, User
     }
 
+    JsonObject getProviderIdentity(JsonObject lastIdentityObject, MobileServiceAuthenticationProvider provider) {
+        try {
+            return new JsonParser().parse(lastIdentityObject.get("identities").toString()).getAsJsonObject()
+                    .getAsJsonObject(provider.toString().toLowerCase(Locale.US));
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }
