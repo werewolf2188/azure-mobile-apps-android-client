@@ -73,10 +73,6 @@ public class SystemPropertiesTests extends TestGroup {
 
         this.addTest(createTypeSystemPropertiesTest("Operations with All System Properties from Type"));
 
-        if (!this.isNetBackend) {
-            this.addTest(createCustomSystemPropertiesTest("Operations with Custom System Properties set on Table"));
-        }
-
         this.addTest(createQueryParameterSystemPropertiesTest("Operations with Query Parameter System Properties set on Table", "a=a"));
         this.addTest(createMergeConflictTest("Merge Conflict"));
         this.addTest(createMergeConflictGenericTest("Merge Conflict Generic"));
