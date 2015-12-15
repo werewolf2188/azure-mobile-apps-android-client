@@ -75,12 +75,10 @@ public class LoginTests extends TestGroup {
             this.addTest(createLoginTest(provider));
             this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
 
-            if (!isNetBackend) {
-                if (providersWithRecycledTokenSupport.contains(provider)) {
-                    this.addTest(createLogoutTest());
-                    this.addTest(createClientSideLoginTest(provider));
-                    this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
-                }
+            if (providersWithRecycledTokenSupport.contains(provider)) {
+                this.addTest(createLogoutTest());
+                this.addTest(createClientSideLoginTest(provider));
+                this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
             }
         }
 
@@ -103,9 +101,7 @@ public class LoginTests extends TestGroup {
         this.addTest(createLoginWithCallbackTest(MobileServiceAuthenticationProvider.Facebook));
         this.addTest(createCRUDWithCallbackTest(USER_PERMISSION_TABLE_NAME, MobileServiceAuthenticationProvider.Facebook, TablePermission.User, true));
         this.addTest(createLogoutWithCallbackTest());
-        if (!isNetBackend) {
-            this.addTest(createClientSideLoginWithCallbackTest(providersWithRecycledTokenSupport.get(0)));
-        }
+        this.addTest(createClientSideLoginWithCallbackTest(providersWithRecycledTokenSupport.get(0)));
 
         this.addTest(createLogoutWithCallbackTest());
         // this.addTest(createLoginWithGoogleAccountWithCallbackTest(false,
@@ -439,9 +435,9 @@ public class LoginTests extends TestGroup {
 
                 try {
 
-                    JsonElement jsonEntityLookUp = table.lookUp(item.get("id").getAsString()).get();
+                    JsonObject jsonEntity = table.lookUp(item.get("id").getAsString()).get().getAsJsonObject();
                     if (userIsAuthenticated && tableType == TablePermission.User) {
-                        lastUserIdentityObject = jsonEntityLookUp.getAsJsonObject();
+                        lastUserIdentityObject = parseIdentityObject(jsonEntity);
                     }
 
                     log("delete item");
@@ -615,7 +611,7 @@ public class LoginTests extends TestGroup {
 
 
                                         if (userIsAuthenticated && tableType == TablePermission.User) {
-                                            lastUserIdentityObject = jsonEntity;
+                                            lastUserIdentityObject = parseIdentityObject(jsonEntity);
                                         }
 
                                         log("delete item");
@@ -665,12 +661,15 @@ public class LoginTests extends TestGroup {
         Public, User
     }
 
-    JsonObject getProviderIdentity(JsonObject lastIdentityObject, MobileServiceAuthenticationProvider provider) {
-        try {
-            return new JsonParser().parse(lastIdentityObject.get("identities").toString()).getAsJsonObject()
-                    .getAsJsonObject(provider.toString().toLowerCase(Locale.US));
-        } catch (Exception e) {
-            return null;
+    JsonObject parseIdentityObject(JsonObject jsonEntity) {
+        if (isNetBackend) {
+            return new JsonParser().parse(jsonEntity.get("identities").getAsString()).getAsJsonObject();
+        } else {
+            return jsonEntity.getAsJsonObject("identities");
         }
+    }
+
+    JsonObject getProviderIdentity(JsonObject lastIdentityObject, MobileServiceAuthenticationProvider provider) {
+        return lastIdentityObject.getAsJsonObject(provider.toString().toLowerCase(Locale.US));
     }
 }
