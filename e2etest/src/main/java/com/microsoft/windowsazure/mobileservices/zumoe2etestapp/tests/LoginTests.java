@@ -66,6 +66,9 @@ public class LoginTests extends TestGroup {
 
         ArrayList<MobileServiceAuthenticationProvider> providersWithRecycledTokenSupport = new ArrayList<MobileServiceAuthenticationProvider>();
         providersWithRecycledTokenSupport.add(MobileServiceAuthenticationProvider.Facebook);
+        providersWithRecycledTokenSupport.add(MobileServiceAuthenticationProvider.Twitter);
+        providersWithRecycledTokenSupport.add(MobileServiceAuthenticationProvider.MicrosoftAccount);
+
         // Known bug - Drop login via Google token until Google client flow is
         // reintroduced
         // providersWithRecycledTokenSupport.add(MobileServiceAuthenticationProvider.Google);
@@ -80,6 +83,15 @@ public class LoginTests extends TestGroup {
                 this.addTest(createClientSideLoginTest(provider));
                 this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
             }
+
+            this.addTest(createLogoutWithCallbackTest());
+            this.addTest(createLoginWithCallbackTest(provider));
+            this.addTest(createCRUDWithCallbackTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
+
+            if (providersWithRecycledTokenSupport.contains(provider)) {
+                this.addTest(createLogoutWithCallbackTest());
+                this.addTest(createClientSideLoginWithCallbackTest(provider));
+            }
         }
 
         // this.addTest(createLogoutTest());
@@ -92,20 +104,6 @@ public class LoginTests extends TestGroup {
         //
         // this.addTest(createLogoutTest());
         // this.addTest(createLoginWithGoogleAccountTest(false, null));
-
-        // With Callback
-        this.addTest(createLogoutWithCallbackTest());
-        this.addTest(createLoginWithCallbackTest(MobileServiceAuthenticationProvider.Google));
-        this.addTest(createCRUDWithCallbackTest(USER_PERMISSION_TABLE_NAME, MobileServiceAuthenticationProvider.Google, TablePermission.User, true));
-        this.addTest(createLogoutWithCallbackTest());
-        this.addTest(createLoginWithCallbackTest(MobileServiceAuthenticationProvider.Facebook));
-        this.addTest(createCRUDWithCallbackTest(USER_PERMISSION_TABLE_NAME, MobileServiceAuthenticationProvider.Facebook, TablePermission.User, true));
-        this.addTest(createLogoutWithCallbackTest());
-        this.addTest(createClientSideLoginWithCallbackTest(providersWithRecycledTokenSupport.get(0)));
-
-        this.addTest(createLogoutWithCallbackTest());
-        // this.addTest(createLoginWithGoogleAccountWithCallbackTest(false,
-        // null));
 
         List<TestCase> testCases = this.getTestCases();
         for (int i = indexOfStartAuthenticationTests; i < testCases.size(); i++) {
@@ -326,9 +324,9 @@ public class LoginTests extends TestGroup {
                     return;
                 }
 
-                JsonObject providerIdentity = getProviderIdentity(lastUserIdentityObject, provider);
+                JsonObject providerToken = getProviderToken(lastUserIdentityObject, provider);
                 lastUserIdentityObject = null;
-                if (providerIdentity == null) {
+                if (providerToken == null) {
                     log("Cannot find identity for specified provider. Cannot run this test.");
                     TestResult testResult = new TestResult();
                     testResult.setTestCase(testCase);
@@ -336,9 +334,6 @@ public class LoginTests extends TestGroup {
                     callback.onTestComplete(testCase, testResult);
                     return;
                 }
-
-                JsonObject token = new JsonObject();
-                token.addProperty("access_token", providerIdentity.get("access_token").getAsString());
 
                 boolean useEnumOverload = rndGen.nextBoolean();
                 if (useEnumOverload) {
@@ -348,7 +343,7 @@ public class LoginTests extends TestGroup {
                     testResult.setTestCase(testCase);
                     try {
 
-                        MobileServiceUser user = client.login(provider, token).get();
+                        MobileServiceUser user = client.login(provider, providerToken).get();
 
                         log("Logged in as " + user.getUserId());
                         testResult.setStatus(TestStatus.Passed);
@@ -366,7 +361,7 @@ public class LoginTests extends TestGroup {
                     testResult.setTestCase(testCase);
                     try {
 
-                        MobileServiceUser user = client.login(provider.toString(), token).get();
+                        MobileServiceUser user = client.login(provider.toString(), providerToken).get();
 
                         log("Logged in as " + user.getUserId());
                         testResult.setStatus(TestStatus.Passed);
@@ -507,10 +502,10 @@ public class LoginTests extends TestGroup {
                     return;
                 }
 
-                JsonObject providerIdentity = getProviderIdentity(lastUserIdentityObject, provider);
+                JsonObject providerToken = getProviderToken(lastUserIdentityObject, provider);
                 lastUserIdentityObject = null;
 
-                if (providerIdentity == null) {
+                if (providerToken == null) {
                     log("Cannot find identity for specified provider. Cannot run this test.");
                     TestResult testResult = new TestResult();
                     testResult.setTestCase(testCase);
@@ -519,8 +514,6 @@ public class LoginTests extends TestGroup {
                     return;
                 }
 
-                JsonObject token = new JsonObject();
-                token.addProperty("access_token", providerIdentity.get("access_token").getAsString());
                 UserAuthenticationCallback authCallback = new UserAuthenticationCallback() {
 
                     @Override
@@ -541,10 +534,10 @@ public class LoginTests extends TestGroup {
                 boolean useEnumOverload = rndGen.nextBoolean();
                 if (useEnumOverload) {
                     log("Calling the overload MobileServiceClient.login(MobileServiceAuthenticationProvider, JsonObject, UserAuthenticationCallback)");
-                    client.login(provider, token, authCallback);
+                    client.login(provider, providerToken, authCallback);
                 } else {
                     log("Calling the overload MobileServiceClient.login(String, JsonObject, UserAuthenticationCallback)");
-                    client.login(provider.toString(), token, authCallback);
+                    client.login(provider.toString(), providerToken, authCallback);
                 }
             }
         };
@@ -669,7 +662,7 @@ public class LoginTests extends TestGroup {
         }
     }
 
-    JsonObject getProviderIdentity(JsonObject lastIdentityObject, MobileServiceAuthenticationProvider provider) {
+    JsonObject getProviderToken(JsonObject lastIdentityObject, MobileServiceAuthenticationProvider provider) {
         return lastIdentityObject.getAsJsonObject(provider.toString().toLowerCase(Locale.US));
     }
 }
