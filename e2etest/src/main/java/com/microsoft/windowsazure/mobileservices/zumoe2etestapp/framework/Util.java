@@ -108,6 +108,14 @@ public class Util {
         return true;
     }
 
+    public static JsonObject RemoveSystemProperties(JsonObject item) {
+        item.remove("updatedAt");
+        item.remove("version");
+        item.remove("deleted");
+        item.remove("createdAt");
+        return item;
+    }
+
     public static <E> String listToString(List<E> list) {
         return arrayToString(list.toArray());
     }

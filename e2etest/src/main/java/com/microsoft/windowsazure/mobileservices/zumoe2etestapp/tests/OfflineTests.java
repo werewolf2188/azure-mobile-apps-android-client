@@ -20,7 +20,6 @@ See the Apache Version 2.0 License for specific language governing permissions a
 package com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.annotations.SerializedName;
@@ -31,7 +30,6 @@ import com.microsoft.windowsazure.mobileservices.http.NextServiceFilterCallback;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilter;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequest;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
-import com.microsoft.windowsazure.mobileservices.table.MobileServiceJsonTable;
 import com.microsoft.windowsazure.mobileservices.table.MobileServicePreconditionFailedExceptionJson;
 import com.microsoft.windowsazure.mobileservices.table.MobileServiceTable;
 import com.microsoft.windowsazure.mobileservices.table.query.Query;
@@ -57,7 +55,6 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestRe
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestStatus;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -1135,7 +1132,7 @@ public class OfflineTests extends TestGroup {
 
     private TestCase createSyncTestForAuthenticatedTable(final boolean isLoggedIn) {
 
-        final String tableName = "offlineReadyAuthenticated";
+        final String tableName = "OfflineReadyNoVersionAuthenticated";
 
         final TestCase test = new TestCase() {
 
@@ -1270,7 +1267,7 @@ public class OfflineTests extends TestGroup {
 
     private TestCase createNoOptimisticConcurrencyTest() {
 
-        final String tableName = "offlineReadyAuthenticated";
+        final String tableName = "OfflineReadyNoVersionAuthenticated";
 
         // If a table does not have a version column, then offline will still
         // work, but there will be no conflicts

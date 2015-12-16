@@ -573,13 +573,11 @@ public class MainActivity extends Activity {
     }
 
     private boolean IsNetBackend() {
-
         try {
-
             OkHttpClient httpclient = new OkHttpClient();
 
             Request request = new Request.Builder()
-                    .url(getMobileServiceURL() + "api/runtimeinfo")
+                    .url(getMobileServiceURL() + "/api/runtimeinfo")
                     .addHeader("ZUMO-API-VERSION", "2.0.0")
                     .build();
 
