@@ -494,19 +494,23 @@ public class MainActivity extends Activity {
     }
 
     private String getMobileServiceURL() {
-        return this.getPreference(Constants.PREFERENCE_MOBILE_SERVICE_URL);
+        String url = this.getPreference(Constants.PREFERENCE_MOBILE_SERVICE_URL);
+        if (url != "" && !url.endsWith("/")) {
+            url = url + "/";
+        }
+        return url;
     }
 
     private String getStorageURL() {
-        return this.getPreference(Constants.PREFERENCE_SUNLIGHT_CONTAINER_URL);
+        return this.getPreference(Constants.PREFERENCE_CONTAINER_URL);
     }
 
     private String getStorageBase64Token() {
-        return this.getPreference(Constants.PREFERENCE_SUNLIGHT_BASE64_TOKEN);
+        return this.getPreference(Constants.PREFERENCE_BASE64_TOKEN);
     }
 
     private String getStorageRuntime() {
-        return this.getPreference(Constants.PREFERENCE_SUNLIGHT_RUNTIME_VERSION);
+        return this.getPreference(Constants.PREFERENCE_RUNTIME_VERSION);
     }
 
     public String getGoogleUserId() {
@@ -573,9 +577,7 @@ public class MainActivity extends Activity {
     }
 
     private boolean IsNetBackend() {
-
         try {
-
             OkHttpClient httpclient = new OkHttpClient();
 
             Request request = new Request.Builder()
@@ -606,8 +608,7 @@ public class MainActivity extends Activity {
             }
 
             return false;
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             return false;
         }
     }

@@ -47,7 +47,6 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.Movi
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.MovieComparator;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.SimpleMovieFilter;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.StringIdMovie;
-import com.squareup.okhttp.internal.http.StatusLine;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -626,6 +625,7 @@ public class CustomApiTests extends TestGroup {
                         JsonElement jsonElement = client.invokeApi(api).get();
 
                         JsonObject expectedResult = new JsonObject();
+                        expectedResult.addProperty("method", method);
                         expectedResult.add("user", createUserObject(mClient));
 
                         if (mQuery != null && mQuery.size() > 0) {
@@ -658,6 +658,7 @@ public class CustomApiTests extends TestGroup {
                         JsonElement jsonElement = client.invokeApi(api, body).get();
 
                         JsonObject expectedResult = new JsonObject();
+                        expectedResult.addProperty("method", method);
                         expectedResult.add("user", createUserObject(mClient));
 
                         if (mQuery != null && mQuery.size() > 0) {
@@ -691,8 +692,8 @@ public class CustomApiTests extends TestGroup {
                         JsonElement jsonElement = client.invokeApi(api, method, mQuery).get();
 
                         JsonObject expectedResult = new JsonObject();
+                        expectedResult.addProperty("method", method);
                         expectedResult.add("user", createUserObject(mClient));
-
                         if (mQuery != null && mQuery.size() > 0) {
                             expectedResult.add("query", createQueryObject(mQuery));
                         }
@@ -724,6 +725,7 @@ public class CustomApiTests extends TestGroup {
                         JsonElement jsonElement = client.invokeApi(api, body, method, mQuery).get();
 
                         JsonObject expectedResult = new JsonObject();
+                        expectedResult.addProperty("method", method);
                         expectedResult.add("user", createUserObject(mClient));
 
                         if (mQuery != null && mQuery.size() > 0) {
@@ -784,7 +786,6 @@ public class CustomApiTests extends TestGroup {
             json.addProperty("level", "anonymous");
         } else {
             json.addProperty("level", "authenticated");
-            json.addProperty("userid", client.getCurrentUser().getUserId());
         }
 
         return json;

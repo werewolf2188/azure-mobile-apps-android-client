@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
+
 public class UpdateDeleteTests extends TestGroup {
 
     protected static final String ROUNDTRIP_TABLE_NAME = "IntIdRoundTripTable";
@@ -244,17 +245,20 @@ public class UpdateDeleteTests extends TestGroup {
 
                     log("update the item");
                     JsonObject updatedItem = table.update(itemToUpdate).get();
-
+                    updatedItem = Util.RemoveSystemProperties(updatedItem);
+                    log("removed system properties");
                     log("lookup the item");
                     JsonObject lookedUpItem = (JsonObject) table.lookUp(updatedItem.get("id").getAsInt()).get();
 
                     log("verify items are equal");
+
                     if (Util.compareJson(updatedItem, lookedUpItem)) { // check
                         // the
                         // items
                         // are
                         // equal
                         log("cleanup");
+
                         table.delete(lookedUpItem.get("id").getAsInt()).get(); // clean
 
                         if (callback != null)
@@ -824,7 +828,8 @@ public class UpdateDeleteTests extends TestGroup {
                                                     // was
                                                     // ok
                                                     log("verify items are equal");
-                                                    if (Util.compareJson(updatedItem, lookedUpItem)) { // check
+                                                    JsonObject updateItemWithOutSystemProperties = Util.RemoveSystemProperties(updatedItem);
+                                                    if (Util.compareJson(updateItemWithOutSystemProperties, lookedUpItem)) { // check
                                                         // the
                                                         // items
                                                         // are
