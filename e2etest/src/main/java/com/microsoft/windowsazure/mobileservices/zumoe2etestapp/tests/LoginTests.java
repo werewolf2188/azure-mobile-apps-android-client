@@ -74,23 +74,30 @@ public class LoginTests extends TestGroup {
         // providersWithRecycledTokenSupport.add(MobileServiceAuthenticationProvider.Google);
 
         for (MobileServiceAuthenticationProvider provider : MobileServiceAuthenticationProvider.values()) {
-            this.addTest(createLogoutTest());
+            // basic crud auth test
             this.addTest(createLoginTest(provider));
             this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
+            this.addTest(createLogoutTest());
 
+            // ensure logout has cleared auth cookies
+            this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, false));
+
+            // client side login test, if supported
             if (providersWithRecycledTokenSupport.contains(provider)) {
-                this.addTest(createLogoutTest());
                 this.addTest(createClientSideLoginTest(provider));
                 this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
+                this.addTest(createLogoutTest());
             }
 
-            this.addTest(createLogoutWithCallbackTest());
+            // callback crud auth test
             this.addTest(createLoginWithCallbackTest(provider));
             this.addTest(createCRUDWithCallbackTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
+            this.addTest(createLogoutWithCallbackTest());
 
+            // callback client side login test, if supported
             if (providersWithRecycledTokenSupport.contains(provider)) {
-                this.addTest(createLogoutWithCallbackTest());
                 this.addTest(createClientSideLoginWithCallbackTest(provider));
+                this.addTest(createLogoutWithCallbackTest());
             }
         }
 
@@ -112,7 +119,7 @@ public class LoginTests extends TestGroup {
     }
 
     public static TestCase createLoginTest(final MobileServiceAuthenticationProvider provider) {
-        TestCase test = new TestCase("Login with " + provider.toString()) {
+        TestCase test = new TestCase(provider.toString() + " Login") {
 
             @Override
             protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
@@ -232,7 +239,7 @@ public class LoginTests extends TestGroup {
 
     @SuppressWarnings("deprecation")
     public static TestCase createLoginWithCallbackTest(final MobileServiceAuthenticationProvider provider) {
-        TestCase test = new TestCase("With Callback - Login with " + provider.toString()) {
+        TestCase test = new TestCase(provider.toString() + " Login With Callback") {
 
             @Override
             protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
@@ -306,7 +313,7 @@ public class LoginTests extends TestGroup {
     }
 
     private TestCase createClientSideLoginTest(final MobileServiceAuthenticationProvider provider) {
-        TestCase test = new TestCase("Login via token for " + provider.toString()) {
+        TestCase test = new TestCase(provider.toString() + " Token Login") {
 
             @Override
             protected void executeTest(MobileServiceClient client, final TestExecutionCallback callback) {
@@ -469,22 +476,21 @@ public class LoginTests extends TestGroup {
             }
         };
 
-        String testKind;
+        String providerString;
         if (userIsAuthenticated) {
-            testKind = "auth by " + provider.toString();
+            providerString = provider.toString();
         } else {
-            testKind = "unauthenticated";
+            providerString = "(Neg) Unauthenticated";
         }
 
-        String testName = String.format(Locale.getDefault(), "CRUD, %s, table with %s permissions", testKind, tableType.toString());
-        test.setName(testName);
+        test.setName(providerString + " CRUD");
 
         return test;
     }
 
     @SuppressWarnings("deprecation")
     private TestCase createClientSideLoginWithCallbackTest(final MobileServiceAuthenticationProvider provider) {
-        TestCase test = new TestCase("With Callback - Login via token for " + provider.toString()) {
+        TestCase test = new TestCase(provider.toString() + " Token Login With Callback") {
 
             @Override
             protected void executeTest(MobileServiceClient client, final TestExecutionCallback callback) {
@@ -637,15 +643,14 @@ public class LoginTests extends TestGroup {
             }
         };
 
-        String testKind;
+        String providerString;
         if (userIsAuthenticated) {
-            testKind = "auth by " + provider.toString();
+            providerString = provider.toString();
         } else {
-            testKind = "unauthenticated";
+            providerString = "(Neg) Unauthenticated";
         }
 
-        String testName = String.format(Locale.getDefault(), "CRUD With Callback, %s, table with %s permissions", testKind, tableType.toString());
-        test.setName(testName);
+        test.setName(providerString + " CRUD With Callback");
 
         return test;
     }
