@@ -126,8 +126,6 @@ public class EnhancedPushTests extends TestGroup {
         test.log("Unregister Native");
 
         hub.unregister().get();
-
-        deleteRegistrationsForChannel(client, registrationId).get();
     }
 
     private TestCase createUnregisterTestCase(String name) {
@@ -634,31 +632,6 @@ public class EnhancedPushTests extends TestGroup {
         register.setName(name);
 
         return register;
-    }
-
-    public ListenableFuture<Void> deleteRegistrationsForChannel(final MobileServiceClient client, String registrationId) {
-
-        final SettableFuture<Void> resultFuture = SettableFuture.create();
-
-        ArrayList<Pair<String, String>> parameters = new ArrayList<Pair<String, String>>();
-
-        parameters.add(new Pair<String, String>("channelUri", registrationId));
-
-        ListenableFuture<JsonElement> serviceFilterFuture = client.invokeApi("deleteRegistrationsForChannel", HttpConstants.DeleteMethod, parameters);
-
-        Futures.addCallback(serviceFilterFuture, new FutureCallback<JsonElement>() {
-            @Override
-            public void onFailure(Throwable exception) {
-                resultFuture.setException(exception);
-            }
-
-            @Override
-            public void onSuccess(JsonElement response) {
-                resultFuture.set(null);
-            }
-        });
-
-        return resultFuture;
     }
 
     public ListenableFuture<JsonElement> verifyUnregisterInstallationResult(final MobileServiceClient client) {
