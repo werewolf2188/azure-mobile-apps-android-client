@@ -62,8 +62,6 @@ public class StorageLogger {
 
             String requestUrl = containerUrl + "/" + mPlatform + "/" + blobName + "?" + token;
 
-            test.setFileName(mPlatform + "/" + blobName);
-
             putBlob(requestUrl, test.getLog());
         }
     }
@@ -90,8 +88,8 @@ public class StorageLogger {
         return dateFormat.format(date);
     }
 
-    private static String decodeToken(String base64Key){
-        byte[] valueDecoded= Base64.decode(base64Key, 0);
+    private static String decodeToken(String base64Key) {
+        byte[] valueDecoded = Base64.decode(base64Key, 0);
         return new String(valueDecoded);
     }
 
@@ -144,8 +142,6 @@ public class StorageLogger {
         JsonArray result = new JsonArray();
 
         for (TestCase testCase : tests) {
-            String blobName = UUID.randomUUID().toString();
-            testCase.setFileName(blobName);
 
             JsonObject test = new JsonObject();
             test.addProperty("full_name", testCase.getName());
@@ -153,8 +149,7 @@ public class StorageLogger {
             test.addProperty("outcome", testCase.getStatus().name());
             test.addProperty("start_time", getFileTime(testCase.getStartTime()));
             test.addProperty("end_time", getFileTime(testCase.getEndTime()));
-            test.addProperty("reference_url", testCase.getName());
-
+            test.addProperty("reference_url", testCase.getFileName());
             result.add(test);
         }
 
