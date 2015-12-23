@@ -29,9 +29,9 @@ import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
+
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -90,23 +90,6 @@ public class StorageLogger {
         return dateFormat.format(date);
     }
 
-    private static String currentDateToStringForURL() {
-
-        Calendar now = Calendar.getInstance();
-
-        int year = now.get(Calendar.YEAR);
-        int month = now.get(Calendar.MONTH);
-        int day = now.get(Calendar.DAY_OF_MONTH);
-        int hours = now.get(Calendar.HOUR_OF_DAY);
-        int minutes = now.get(Calendar.MINUTE);
-        int seconds = now.get(Calendar.SECOND);
-
-        String formatedDate = year + "-" + month + "-" + day
-                + "t" + hours + "-" + minutes + "-" + seconds;
-
-        return formatedDate;
-    }
-
     private static String decodeToken(String base64Key){
         byte[] valueDecoded= Base64.decode(base64Key, 0);
         return new String(valueDecoded);
@@ -123,17 +106,15 @@ public class StorageLogger {
         //upload individual log files
         uploadBlob(tests, mContainerUrl, mToken);
 
-        String currentDateForURL = currentDateToStringForURL();
-
         //Post result for master test run
-        String masterResultBlobUrl = mContainerUrl + "/" + currentDateForURL + "/" + mPlatform + "-master.json?" + mToken;
+        String masterResultBlobUrl = mContainerUrl + "/" + mPlatform + "-master.json?" + mToken;
         String detailFileName = mPlatform + "-detail.json";
 
         JsonArray masterRunResult = createMasterRunResult(failedTestCount, passedTestCount, skippedTestCount, tests.size(), startTime, endTime, detailFileName);
         putBlob(masterResultBlobUrl, masterRunResult.toString());
 
         // post test results
-        String testResultBlobUrl = mContainerUrl + "/" + currentDateForURL + "/" + detailFileName + "?" + mToken;
+        String testResultBlobUrl = mContainerUrl + "/" + detailFileName + "?" + mToken;
 
         JsonArray result = parseRunResult(tests, sourceMap);
         putBlob(testResultBlobUrl, result.toString());
