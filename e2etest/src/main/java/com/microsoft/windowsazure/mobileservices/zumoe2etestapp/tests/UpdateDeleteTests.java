@@ -370,7 +370,6 @@ public class UpdateDeleteTests extends TestGroup {
         };
 
         testCase.setName(name);
-        testCase.setCanRunUnattended(false);
         testCase.setExpectedExceptionClass(expectedExceptionClass);
 
         return testCase;
@@ -455,7 +454,6 @@ public class UpdateDeleteTests extends TestGroup {
         };
 
         testCase.setName(name);
-        testCase.setCanRunUnattended(false);
         testCase.setExpectedExceptionClass(expectedExceptionClass);
 
         return testCase;
@@ -604,7 +602,6 @@ public class UpdateDeleteTests extends TestGroup {
         };
 
         testCase.setName(name);
-        testCase.setCanRunUnattended(false);
         testCase.setExpectedExceptionClass(expectedExceptionClass);
 
         return testCase;
