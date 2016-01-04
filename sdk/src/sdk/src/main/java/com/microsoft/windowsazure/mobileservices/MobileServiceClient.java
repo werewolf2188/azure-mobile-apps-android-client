@@ -2,19 +2,19 @@
 Copyright (c) Microsoft Open Technologies, Inc.
 All Rights Reserved
 Apache 2.0 License
- 
+
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
- 
+
      http://www.apache.org/licenses/LICENSE-2.0
- 
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
- 
+
 See the Apache Version 2.0 License for specific language governing permissions and limitations under the License.
  */
 
@@ -254,8 +254,27 @@ public class MobileServiceClient {
      */
     public MobileServiceClient(URL appUrl, Context context) {
         GsonBuilder gsonBuilder = createMobileServiceGsonBuilder();
-        gsonBuilder.serializeNulls(); // by default, add null serialization
+        initialize(appUrl, null, gsonBuilder, context, new OkHttpClientFactoryImpl(), null, null);
+    }
 
+    /**
+     * Constructor for the MobileServiceClient
+     *
+     * @param appUrl  Mobile Service URL
+     * @param context The Context where the MobileServiceClient is created
+     * @throws java.net.MalformedURLException
+     */
+    public MobileServiceClient(String appUrl, Context context, GsonBuilder gsonBuilder) throws MalformedURLException {
+        this(new URL(appUrl), context, gsonBuilder);
+    }
+
+    /**
+     * Constructor for the MobileServiceClient
+     *
+     * @param appUrl  Mobile Service URL
+     * @param context The Context where the MobileServiceClient is created
+     */
+    public MobileServiceClient(URL appUrl, Context context, GsonBuilder gsonBuilder) {
         initialize(appUrl, null, gsonBuilder, context, new OkHttpClientFactoryImpl(), null, null);
     }
 
@@ -265,7 +284,7 @@ public class MobileServiceClient {
      *
      * @return
      */
-    public static GsonBuilder createMobileServiceGsonBuilder() {
+    private static GsonBuilder createMobileServiceGsonBuilder() {
         GsonBuilder gsonBuilder = new GsonBuilder();
 
         // Register custom date serializer/deserializer
@@ -273,6 +292,9 @@ public class MobileServiceClient {
         LongSerializer longSerializer = new LongSerializer();
         gsonBuilder.registerTypeAdapter(Long.class, longSerializer);
         gsonBuilder.registerTypeAdapter(long.class, longSerializer);
+
+        gsonBuilder.excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC);
+        gsonBuilder.serializeNulls(); // by default, add null serialization
 
         return gsonBuilder;
     }
