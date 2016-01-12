@@ -32,19 +32,15 @@ import com.microsoft.windowsazure.mobileservices.table.sync.localstore.MobileSer
 public class LocalTableOperationProcessor implements TableOperationVisitor<Void> {
     private MobileServiceLocalStore mStore;
     private JsonObject mItem;
-    private String mItemBackupTable;
 
     /**
      * Constructor for LocalTableOperationProcessor
      *
      * @param store           the local store
-     * @param item            the item to process
-     * @param itemBackupTable the table name for item backup
      */
-    public LocalTableOperationProcessor(MobileServiceLocalStore store, JsonObject item, String itemBackupTable) {
+    public LocalTableOperationProcessor(MobileServiceLocalStore store, JsonObject item) {
         this.mStore = store;
         this.mItem = item;
-        this.mItemBackupTable = itemBackupTable;
     }
 
     @Override
@@ -61,38 +57,18 @@ public class LocalTableOperationProcessor implements TableOperationVisitor<Void>
 
     @Override
     public Void visit(DeleteOperation operation) throws Throwable {
-        JsonObject backedUpItem = this.mStore.lookup(operation.getTableName(), operation.getItemId());
-
-        if (backedUpItem == null) {
-            backedUpItem = this.mItem;
-        }
-        // '/' is a reserved character that cannot be used on string ids.
-        // We use it to build a unique compound string from tableName and
-        // itemId
-        String tableItemId = operation.getTableName() + "/" + operation.getItemId();
-
-        JsonObject item = new JsonObject();
-        item.addProperty("id", tableItemId);
-        item.addProperty("tablename", operation.getTableName());
-        item.addProperty("itemid", operation.getItemId());
-        item.add("clientitem", backedUpItem);
-
-        this.mStore.upsert(this.mItemBackupTable, item, false);
+        if (this.mItem == null)
+            operation.setItem(this.mStore.lookup(operation.getTableName(), operation.getItemId()));
+        else
+            operation.setItem(this.mItem);
         this.mStore.delete(operation.getTableName(), operation.getItemId());
-
         return null;
     }
 
-    /**
-     * Gets the item to process
-     */
     public JsonObject getItem() {
         return this.mItem;
     }
 
-    /**
-     * Sets the item to process
-     */
     public void setItem(JsonObject item) {
         this.mItem = item;
     }

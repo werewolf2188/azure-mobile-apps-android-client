@@ -99,6 +99,7 @@ public class OperationQueue {
         columns.put("__queueloadedat", ColumnDataType.Date);
         columns.put("sequence", ColumnDataType.Real);
         columns.put("state", ColumnDataType.Real);
+        columns.put("item", ColumnDataType.Other);
 
         store.defineTable(OPERATION_QUEUE_TABLE, columns);
     }
@@ -158,6 +159,7 @@ public class OperationQueue {
         element.addProperty("__queueloadedat", DateSerializer.serialize(opQueueItem.getQueueLoadedAt()));
         element.addProperty("sequence", opQueueItem.getSequence());
         element.addProperty("state", opQueueItem.getOperationState().getValue());
+        element.add("item", opQueueItem.getItem());
 
         return element;
     }
@@ -171,20 +173,21 @@ public class OperationQueue {
         Date queueLoadedAt = DateSerializer.deserialize(element.get("__queueloadedat").getAsString());
         long sequence = element.get("sequence").getAsLong();
         int state = element.get("state").getAsInt();
+        JsonObject item = (element.get("item").isJsonNull()) ? null : element.get("item").getAsJsonObject();
 
         TableOperation operation = null;
         switch (kind) {
             case 0:
-                operation = InsertOperation.create(id, tableName, itemId, createdAt);
+                operation = new InsertOperation(id, tableName, itemId, createdAt);
                 break;
             case 1:
-                operation = UpdateOperation.create(id, tableName, itemId, createdAt);
+                operation = new UpdateOperation(id, tableName, itemId, createdAt);
                 break;
             case 2:
-                operation = DeleteOperation.create(id, tableName, itemId, createdAt);
+                operation = new DeleteOperation(id, tableName, itemId, createdAt);
                 break;
         }
-
+        operation.setItem(item);
         operation.setOperationState(MobileServiceTableOperationState.parse(state));
 
         return new OperationQueueItem(operation, queueLoadedAt, sequence);
@@ -551,6 +554,12 @@ public class OperationQueue {
         private long getSequence() {
             return this.mSequence;
         }
+
+        @Override
+        public JsonObject getItem() { return this.mOperation.getItem(); }
+
+        @Override
+        public void setItem(JsonObject item) { this.mOperation.setItem(item); }
 
         private boolean isCancelled() {
             return this.mCancelled;

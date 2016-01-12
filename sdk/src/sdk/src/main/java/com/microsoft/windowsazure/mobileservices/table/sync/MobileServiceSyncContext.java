@@ -37,7 +37,6 @@ import com.microsoft.windowsazure.mobileservices.table.MobileServiceSystemColumn
 import com.microsoft.windowsazure.mobileservices.table.query.Query;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOperations;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
-import com.microsoft.windowsazure.mobileservices.table.sync.localstore.ColumnDataType;
 import com.microsoft.windowsazure.mobileservices.table.sync.localstore.MobileServiceLocalStore;
 import com.microsoft.windowsazure.mobileservices.table.sync.localstore.MobileServiceLocalStoreException;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.DeleteOperation;
@@ -47,6 +46,7 @@ import com.microsoft.windowsazure.mobileservices.table.sync.operations.MobileSer
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.RemoteTableOperationProcessor;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperation;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationError;
+import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationKind;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.UpdateOperation;
 import com.microsoft.windowsazure.mobileservices.table.sync.pull.IncrementalPullStrategy;
 import com.microsoft.windowsazure.mobileservices.table.sync.pull.PullStrategy;
@@ -66,11 +66,9 @@ import com.microsoft.windowsazure.mobileservices.threading.MultiReadWriteLockDic
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
@@ -83,10 +81,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Provides a way to synchronize local database with remote database.
  */
 public class MobileServiceSyncContext {
-    /**
-     * Table that stores backed up items
-     */
-    private static final String ITEM_BACKUP_TABLE = "__itembackups";
     private SettableFuture<Void> mInitialized;
     private MobileServiceClient mClient;
     private MobileServiceLocalStore mStore;
@@ -146,16 +140,6 @@ public class MobileServiceSyncContext {
         this.mInitLock = new ReentrantReadWriteLock(true);
         this.mOpLock = new ReentrantReadWriteLock(true);
         this.mPushSRLock = new ReentrantLock(true);
-    }
-
-    private static void initializeStore(MobileServiceLocalStore store) throws MobileServiceLocalStoreException {
-        Map<String, ColumnDataType> columns = new HashMap<String, ColumnDataType>();
-        columns.put("id", ColumnDataType.String);
-        columns.put("tablename", ColumnDataType.String);
-        columns.put("itemid", ColumnDataType.String);
-        columns.put("clientitem", ColumnDataType.Other);
-
-        store.defineTable(ITEM_BACKUP_TABLE, columns);
     }
 
     private static boolean isDeleted(JsonObject item) {
@@ -236,7 +220,6 @@ public class MobileServiceSyncContext {
      * @throws MobileServiceLocalStoreException
      */
     public void cancelAndUpdateItem(TableOperationError tableOperationError) throws Throwable {
-
         MultiReadWriteLock<String> tableLock = null;
         MultiLock<String> idLock = null;
         this.mInitLock.readLock().lock();
@@ -247,11 +230,9 @@ public class MobileServiceSyncContext {
 
             this.mOpLock.writeLock().lock();
 
-            String tableItemId = tableOperationError.getTableName() + "/" + tableOperationError.getItemId();
-
             tableLock = this.mTableLockMap.lockRead(tableOperationError.getTableName());
 
-            idLock = this.mIdLockMap.lock(tableItemId);
+            idLock = lockItem(tableOperationError.getTableName(), tableOperationError.getItemId());
 
             this.mStore.upsert(tableOperationError.getTableName(), tableOperationError.getServerItem(), true);
 
@@ -292,15 +273,11 @@ public class MobileServiceSyncContext {
 
             this.mOpLock.writeLock().lock();
 
-            String tableItemId = tableOperationError.getTableName() + "/" + tableOperationError.getItemId();
-
             tableLock = this.mTableLockMap.lockRead(tableOperationError.getTableName());
 
-            idLock = this.mIdLockMap.lock(tableItemId);
+            idLock = lockItem(tableOperationError.getTableName(), tableOperationError.getItemId());
 
-            String itemId = tableOperationError.getItemId();
-
-            this.mStore.delete(tableOperationError.getTableName(), itemId);
+            this.mStore.delete(tableOperationError.getTableName(), tableOperationError.getItemId());
 
             removeTableOperation(tableOperationError);
 
@@ -575,7 +552,7 @@ public class MobileServiceSyncContext {
      * synchronized on context push.
      *
      * @param tableName the local table name
-     * @param itemId    the id of the item to be deleted
+     * @param item    the item to be deleted
      */
     void delete(String tableName, JsonObject item) throws Throwable {
         String invTableName = tableName != null ? tableName.trim().toLowerCase(Locale.getDefault()) : null;
@@ -620,8 +597,6 @@ public class MobileServiceSyncContext {
                         OperationQueue.initializeStore(this.mStore);
                         OperationErrorList.initializeStore(this.mStore);
                         IncrementalPullStrategy.initializeStore(this.mStore);
-
-                        initializeStore(this.mStore);
 
                         this.mStore.initialize();
 
@@ -883,15 +858,6 @@ public class MobileServiceSyncContext {
                         }
                     }
 
-                    // '/' is a reserved character that cannot be used on string
-                    // ids.
-                    // We use it to build a unique compound string from
-                    // tableName and
-                    // itemId
-                    String tableItemId = operation.getTableName() + "/" + operation.getItemId();
-
-                    this.mStore.delete(ITEM_BACKUP_TABLE, tableItemId);
-
                     bookmark.dequeue();
 
                 } finally {
@@ -941,25 +907,13 @@ public class MobileServiceSyncContext {
     }
 
     private void pushOperation(TableOperation operation) throws MobileServiceLocalStoreException, MobileServiceSyncHandlerException {
-
         operation.setOperationState(MobileServiceTableOperationState.Attempted);
 
-        JsonObject item = this.mStore.lookup(operation.getTableName(), operation.getItemId());
-
-        if (item == null) {
-            // '/' is a reserved character that cannot be used on string ids.
-            // We use it to build a unique compound string from tableName and
-            // itemId
-            String tableItemId = operation.getTableName() + "/" + operation.getItemId();
-
-            JsonObject backedUpItem = this.mStore.lookup(ITEM_BACKUP_TABLE, tableItemId);
-
-            if (backedUpItem != null) {
-                item = backedUpItem.get("clientitem").isJsonObject() ? backedUpItem.getAsJsonObject("clientitem") : null;
-            }
+        if(operation.getKind() != TableOperationKind.Delete){
+            operation.setItem(this.mStore.lookup(operation.getTableName(), operation.getItemId()));
         }
 
-        JsonObject result = this.mHandler.executeTableOperation(new RemoteTableOperationProcessor(this.mClient, item), operation);
+        JsonObject result = this.mHandler.executeTableOperation(new RemoteTableOperationProcessor(this.mClient, operation.getItem()), operation);
 
         if (result != null) {
             this.mStore.upsert(operation.getTableName(), result, true);
@@ -982,14 +936,8 @@ public class MobileServiceSyncContext {
                 // get SHARED access to table lock
                 MultiReadWriteLock<String> tableLock = this.mTableLockMap.lockRead(operation.getTableName());
 
-                // '/' is a reserved character that cannot be used on string
-                // ids.
-                // We use it to build a unique compound string from tableName
-                // and itemId
-                String tableItemId = operation.getTableName() + "/" + operation.getItemId();
-
                 // get EXCLUSIVE access to id lock
-                MultiLock<String> idLock = this.mIdLockMap.lock(tableItemId);
+                MultiLock<String> idLock = lockItem(operation);
 
                 lockedOp = new LockProtectedOperation(operation, tableLock, idLock);
             }
@@ -1018,24 +966,14 @@ public class MobileServiceSyncContext {
     }
 
     private TableOperationError getTableOperationError(TableOperation operation, Throwable throwable) throws MobileServiceLocalStoreException {
-        JsonObject clientItem = this.mStore.lookup(operation.getTableName(), operation.getItemId());
-
-        if (clientItem == null) {
-            // '/' is a reserved character that cannot be used on string ids.
-            // We use it to build a unique compound string from tableName and
-            // itemId
-            String tableItemId = operation.getTableName() + "/" + operation.getItemId();
-
-            JsonObject backedUpItem = this.mStore.lookup(ITEM_BACKUP_TABLE, tableItemId);
-
-            if (backedUpItem != null) {
-                clientItem = backedUpItem.get("clientitem").isJsonObject() ? backedUpItem.getAsJsonObject("clientitem") : null;
-            }
-        }
-
         Integer statusCode = null;
         String serverResponse = null;
-        JsonObject serverItem = null;
+        JsonObject serverItem = null, clientItem;
+
+        if (operation.getKind() == TableOperationKind.Delete)
+            clientItem = operation.getItem();
+        else
+            clientItem = this.mStore.lookup(operation.getTableName(), operation.getItemId());
 
         if (throwable instanceof MobileServiceException) {
             MobileServiceException msEx = (MobileServiceException) throwable;
@@ -1074,18 +1012,10 @@ public class MobileServiceSyncContext {
                 MultiReadWriteLock<String> tableLock = this.mTableLockMap.lockRead(operation.getTableName());
 
                 try {
-                    // '/' is a reserved character that cannot be used on string
-                    // ids.
-                    // We use it to build a unique compound string from
-                    // tableName
-                    // and itemId
-                    String tableItemId = operation.getTableName() + "/" + operation.getItemId();
-
-                    // get EXCLUSIVE access to id lock
-                    MultiLock<String> idLock = this.mIdLockMap.lock(tableItemId);
+                    MultiLock<String> idLock = lockItem(operation);
 
                     try {
-                        operation.accept(new LocalTableOperationProcessor(this.mStore, item, ITEM_BACKUP_TABLE));
+                        operation.accept(new LocalTableOperationProcessor(this.mStore, item));
                         this.mOpQueue.enqueue(operation);
                     } finally {
                         this.mIdLockMap.unLock(idLock);
@@ -1099,6 +1029,14 @@ public class MobileServiceSyncContext {
         } finally {
             this.mInitLock.readLock().unlock();
         }
+    }
+
+    private MultiLock<String> lockItem(TableOperation operation) {
+        return lockItem(operation.getTableName(), operation.getItemId());
+    }
+
+    private MultiLock<String> lockItem(String tableName, String itemId) {
+        return this.mIdLockMap.lock(tableName + "/" + itemId);
     }
 
     private static class PushSyncRequest {

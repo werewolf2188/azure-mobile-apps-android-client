@@ -23,6 +23,8 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.table.sync.operations;
 
+import com.google.gson.JsonObject;
+
 import java.util.Date;
 
 /**
@@ -88,5 +90,19 @@ public interface TableOperation {
      * @param state the Operation State
      */
     void setOperationState(MobileServiceTableOperationState state);
+
+    /**
+     * Gets the operation item
+     *
+     * @return The item
+     */
+    JsonObject getItem();
+
+    /**
+     * Sets the operation item
+     *
+     * @param item
+     */
+    void setItem(JsonObject item);
 
 }
