@@ -43,15 +43,18 @@ import junit.framework.Assert;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class LoginTests extends InstrumentationTestCase {
 
     String appUrl = "";
+    String urlPrefix = "";
 
     @Override
     protected void setUp() throws Exception {
         appUrl = "http://myapp.com/";
+        urlPrefix = ".auth/login/";
         super.setUp();
     }
 
@@ -115,9 +118,7 @@ public class LoginTests extends InstrumentationTestCase {
         }
 
         // Assert
-        String urlPrefix = ".auth/login/";
-        String expectedURL = appUrl + urlPrefix + provider.toString().toLowerCase(Locale.getDefault());
-        assertEquals(expectedURL, result.getRequestUrl());
+        assertEquals(buildExpectedUrl(provider, null), result.getRequestUrl());
     }
 
     public void testLoginOperationWithParameter() throws Throwable {
@@ -167,9 +168,6 @@ public class LoginTests extends InstrumentationTestCase {
         parameters.put("p1", "p1value");
         parameters.put("p2", "p2value");
 
-
-        String parameterQueryString = "?p2=p2value&p1=p1value";
-
         try {
             MobileServiceUser user;
 
@@ -184,9 +182,7 @@ public class LoginTests extends InstrumentationTestCase {
         }
 
         // Assert
-        String urlPrefix = ".auth/login/";
-        String expectedURL = appUrl + urlPrefix + provider.toString().toLowerCase(Locale.getDefault()) + parameterQueryString;
-        assertEquals(expectedURL, result.getRequestUrl());
+        assertEquals(buildExpectedUrl(provider, parameters), result.getRequestUrl());
     }
 
     public void testLoginCallbackOperation() throws Throwable {
@@ -256,9 +252,7 @@ public class LoginTests extends InstrumentationTestCase {
         latch.await();
 
         // Assert
-        String urlPrefix = ".auth/login/";
-        String expectedURL = appUrl + urlPrefix + provider.toString().toLowerCase(Locale.getDefault());
-        assertEquals(expectedURL, result.getRequestUrl());
+        assertEquals(buildExpectedUrl(provider, null), result.getRequestUrl());
     }
 
     public void testLoginShouldThrowError() throws Throwable {
@@ -425,5 +419,25 @@ public class LoginTests extends InstrumentationTestCase {
         }
 
         assertNull(client.getCurrentUser());
+    }
+
+    private String buildExpectedUrl(Object provider, HashMap<String, String> params) {
+        if (params == null) {
+            params = new HashMap<String, String>();
+        }
+        params = new HashMap<String, String>(params);
+        params.put("session_mode", "token");
+
+        String paramString = "";
+        for (Map.Entry<String, String> parameter : params.entrySet()) {
+            if (paramString == "") {
+                paramString = "?";
+            } else {
+                paramString += "&";
+            }
+            paramString += parameter.getKey() + "=" + parameter.getValue();
+        }
+
+        return appUrl + urlPrefix + provider.toString().toLowerCase(Locale.getDefault()) + paramString;
     }
 }
