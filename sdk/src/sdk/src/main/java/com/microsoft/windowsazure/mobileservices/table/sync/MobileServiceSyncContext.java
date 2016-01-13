@@ -220,6 +220,17 @@ public class MobileServiceSyncContext {
      * @throws MobileServiceLocalStoreException
      */
     public void cancelAndUpdateItem(TableOperationError tableOperationError) throws Throwable {
+        cancelAndUpdateItem(tableOperationError, tableOperationError.getServerItem());
+    }
+
+    /**
+     * Cancel operation and update local item with server
+     * @param tableOperationError
+     * @param item
+     * @throws ParseException
+     * @throws MobileServiceLocalStoreException
+     */
+    public void cancelAndUpdateItem(TableOperationError tableOperationError, JsonObject item) throws Throwable {
         MultiReadWriteLock<String> tableLock = null;
         MultiLock<String> idLock = null;
         this.mInitLock.readLock().lock();
@@ -234,7 +245,7 @@ public class MobileServiceSyncContext {
 
             idLock = lockItem(tableOperationError.getTableName(), tableOperationError.getItemId());
 
-            this.mStore.upsert(tableOperationError.getTableName(), tableOperationError.getServerItem(), true);
+            this.mStore.upsert(tableOperationError.getTableName(), item, true);
 
             removeTableOperation(tableOperationError);
 
@@ -877,7 +888,11 @@ public class MobileServiceSyncContext {
                 pushCompletionResult.setStatus(MobileServicePushStatus.Complete);
             }
 
-            pushCompletionResult.setOperationErrors(this.mOpErrorList.getAll());
+            List<TableOperationError> errors = this.mOpErrorList.getAll();
+            for (TableOperationError error : errors) {
+                error.setContext(this);
+            }
+            pushCompletionResult.setOperationErrors(errors);
 
             this.mOpErrorList.clear();
 

@@ -24,7 +24,10 @@ See the Apache Version 2.0 License for specific language governing permissions a
 package com.microsoft.windowsazure.mobileservices.table.sync.operations;
 
 import com.google.gson.JsonObject;
+import com.microsoft.windowsazure.mobileservices.table.sync.MobileServiceSyncContext;
+import com.microsoft.windowsazure.mobileservices.table.sync.localstore.MobileServiceLocalStoreException;
 
+import java.text.ParseException;
 import java.util.Date;
 import java.util.UUID;
 
@@ -43,6 +46,7 @@ public class TableOperationError {
     private String mServerResponse;
     private JsonObject mServerItem;
     private Date mCreatedAt;
+    private MobileServiceSyncContext mContext;
 
     /**
      * Constructor for TableOperationError
@@ -172,4 +176,34 @@ public class TableOperationError {
     public Date getCreatedAt() {
         return this.mCreatedAt;
     }
+
+    /**
+     * Cancel operation and update local item with server
+     * @throws ParseException
+     * @throws MobileServiceLocalStoreException
+     */
+    public void cancelAndUpdateItem() throws Throwable {
+        this.cancelAndUpdateItem(this.getServerItem());
+    }
+
+    /**
+     * Cancel operation and update local store with supplied item
+     * @param item
+     * @throws ParseException
+     * @throws MobileServiceLocalStoreException
+     */
+    public void cancelAndUpdateItem(JsonObject item) throws Throwable {
+        this.mContext.cancelAndUpdateItem(this, item);
+    }
+
+    /**
+     * Cancel operation and discard local item
+     * @throws ParseException
+     * @throws MobileServiceLocalStoreException
+     */
+    public void cancelAndDiscardItem() throws Throwable {
+        this.mContext.cancelAndDiscardItem(this);
+    }
+
+    public void setContext(MobileServiceSyncContext context) { this.mContext = context; }
 }
