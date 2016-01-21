@@ -60,6 +60,13 @@ public interface TableOperation {
     String getItemId();
 
     /**
+     * Gets the table item id
+     *
+     * @return The table item id
+     */
+    String getTableItemId();
+
+    /**
      * Gets the creation date of the operation.
      *
      * @return The operation creation date.

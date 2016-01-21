@@ -50,8 +50,8 @@ public class DeleteOperation extends AbstractTableOperation {
      * @param itemId
      * @param createdAt
      */
-    public DeleteOperation(String id, String tableName, String itemId, Date createdAt) {
-        super(id, tableName, itemId, createdAt);
+    public DeleteOperation(String id, String tableName, String itemId, Date createdAt, MobileServiceTableOperationState state, JsonObject item) {
+        super(id, tableName, itemId, createdAt, state, item);
     }
 
     @Override

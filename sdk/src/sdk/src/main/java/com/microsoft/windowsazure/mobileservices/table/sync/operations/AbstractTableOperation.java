@@ -10,7 +10,7 @@ public abstract class AbstractTableOperation implements TableOperation {
     private String mTableName;
     private String mItemId;
     private Date mCreatedAt;
-    private MobileServiceTableOperationState operationState;
+    private MobileServiceTableOperationState mOperationState;
     private JsonObject mItem;
 
     /**
@@ -21,11 +21,13 @@ public abstract class AbstractTableOperation implements TableOperation {
      * @param itemId    the item id
      * @param createdAt the creation time
      */
-    public AbstractTableOperation(String id, String tableName, String itemId, Date createdAt) {
+    public AbstractTableOperation(String id, String tableName, String itemId, Date createdAt, MobileServiceTableOperationState state, JsonObject item) {
         this.mId = id;
         this.mTableName = tableName;
         this.mItemId = itemId;
         this.mCreatedAt = createdAt;
+        this.mOperationState = state;
+        this.mItem = item;
     }
 
     /**
@@ -35,7 +37,7 @@ public abstract class AbstractTableOperation implements TableOperation {
      * @param itemId    the item id
      */
     public AbstractTableOperation(String tableName, String itemId) {
-        this(UUID.randomUUID().toString(), tableName, itemId, new Date());
+        this(UUID.randomUUID().toString(), tableName, itemId, new Date(), MobileServiceTableOperationState.Pending, null);
     }
 
     @Override
@@ -65,7 +67,7 @@ public abstract class AbstractTableOperation implements TableOperation {
      */
     @Override
     public MobileServiceTableOperationState getOperationState() {
-        return operationState;
+        return this.mOperationState;
     }
 
     /**
@@ -75,7 +77,7 @@ public abstract class AbstractTableOperation implements TableOperation {
      */
     @Override
     public void setOperationState(MobileServiceTableOperationState operationState) {
-        this.operationState = operationState;
+        this.mOperationState = operationState;
     }
 
     @Override
@@ -85,4 +87,7 @@ public abstract class AbstractTableOperation implements TableOperation {
 
     @Override
     public void setItem(JsonObject item) { this.mItem = item; }
+
+    @Override
+    public String getTableItemId() { return this.getTableName() + '/' + this.getItemId(); }
 }

@@ -23,6 +23,8 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.table.sync.operations;
 
+import com.google.gson.JsonObject;
+
 import java.util.Date;
 
 /**
@@ -48,8 +50,8 @@ public class InsertOperation extends AbstractTableOperation {
      * @param itemId
      * @param createdAt
      */
-    public InsertOperation(String id, String tableName, String itemId, Date createdAt) {
-        super(id, tableName, itemId, createdAt);
+    public InsertOperation(String id, String tableName, String itemId, Date createdAt, MobileServiceTableOperationState state) {
+        super(id, tableName, itemId, createdAt, state, null);
     }
 
     @Override

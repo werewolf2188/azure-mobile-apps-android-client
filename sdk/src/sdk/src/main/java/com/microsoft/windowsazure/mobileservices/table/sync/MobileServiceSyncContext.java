@@ -309,6 +309,50 @@ public class MobileServiceSyncContext {
         }
     }
 
+    public void updateOperationAndItem(TableOperationError tableOperationError, TableOperationKind operationType, JsonObject item) throws Throwable {
+        MultiReadWriteLock<String> tableLock = null;
+        MultiLock<String> idLock = null;
+
+        this.mInitLock.readLock().lock();
+
+        try {
+            ensureCorrectlyInitialized();
+
+            this.mOpLock.writeLock().lock();
+
+            tableLock = this.mTableLockMap.lockRead(tableOperationError.getTableName());
+
+            idLock = lockItem(tableOperationError.getTableName(), tableOperationError.getItemId());
+
+            // update item to server version
+            JsonElement version = tableOperationError.getServerItem().get("version");
+            if (version != null)
+                item.addProperty("version", version.getAsString());
+
+            if(operationType == TableOperationKind.Delete) {
+                this.mStore.delete(tableOperationError.getTableName(), tableOperationError.getItemId());
+            } else {
+                this.mStore.upsert(tableOperationError.getTableName(), item, true);
+            }
+
+            this.mOpQueue.updateOperationAndItem(tableOperationError, operationType, item);
+        } finally {
+            try {
+                this.mInitLock.readLock().unlock();
+            } finally {
+                try {
+                    this.mOpLock.writeLock().unlock();
+                } finally {
+                    try {
+                        this.mIdLockMap.unLock(idLock);
+                    } finally {
+                        this.mTableLockMap.unLockRead(tableLock);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Returns the number of pending operations that are not yet pushed to
      * remote tables.
@@ -924,11 +968,14 @@ public class MobileServiceSyncContext {
     private void pushOperation(TableOperation operation) throws MobileServiceLocalStoreException, MobileServiceSyncHandlerException {
         operation.setOperationState(MobileServiceTableOperationState.Attempted);
 
-        if(operation.getKind() != TableOperationKind.Delete){
-            operation.setItem(this.mStore.lookup(operation.getTableName(), operation.getItemId()));
+        JsonObject item;
+        if(operation.getKind() == TableOperationKind.Delete){
+            item = operation.getItem();
+        } else {
+            item = this.mStore.lookup(operation.getTableName(), operation.getItemId());
         }
 
-        JsonObject result = this.mHandler.executeTableOperation(new RemoteTableOperationProcessor(this.mClient, operation.getItem()), operation);
+        JsonObject result = this.mHandler.executeTableOperation(new RemoteTableOperationProcessor(this.mClient, item), operation);
 
         if (result != null) {
             this.mStore.upsert(operation.getTableName(), result, true);

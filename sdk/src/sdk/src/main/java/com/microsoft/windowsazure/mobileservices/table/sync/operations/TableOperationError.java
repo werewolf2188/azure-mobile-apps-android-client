@@ -205,5 +205,17 @@ public class TableOperationError {
         this.mContext.cancelAndDiscardItem(this);
     }
 
+    public void keepOperationAndUpdateItem(JsonObject item) throws Throwable {
+        this.modifyOperationTypeAndUpdateItem(this.getOperationKind(), item);
+    }
+
+    public void modifyOperationType(TableOperationKind type) throws Throwable {
+        this.modifyOperationTypeAndUpdateItem(type, this.getClientItem());
+    }
+
+    public void modifyOperationTypeAndUpdateItem(TableOperationKind type, JsonObject item) throws Throwable {
+        this.mContext.updateOperationAndItem(this, type, item);
+    }
+
     public void setContext(MobileServiceSyncContext context) { this.mContext = context; }
 }
