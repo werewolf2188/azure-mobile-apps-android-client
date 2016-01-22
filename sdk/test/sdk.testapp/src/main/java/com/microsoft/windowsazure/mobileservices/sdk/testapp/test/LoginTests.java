@@ -134,6 +134,13 @@ public class LoginTests extends InstrumentationTestCase {
     }
 
     private void testLoginOperationWithParameter(final Object provider) throws Throwable {
+        HashMap<String, String> parameters = new HashMap<>();
+        parameters.put("p1", "p1value");
+        parameters.put("p2", "p2value");
+        testLoginOperationWithParameter(provider, parameters);
+    }
+
+    private void testLoginOperationWithParameter(final Object provider, HashMap<String, String> parameters) throws Throwable {
         final ResultsContainer result = new ResultsContainer();
 
         // Create client
@@ -161,12 +168,6 @@ public class LoginTests extends InstrumentationTestCase {
                 return resultFuture;
             }
         });
-
-
-        HashMap<String, String> parameters = new HashMap<>();
-
-        parameters.put("p1", "p1value");
-        parameters.put("p2", "p2value");
 
         try {
             MobileServiceUser user;
@@ -426,7 +427,6 @@ public class LoginTests extends InstrumentationTestCase {
             params = new HashMap<String, String>();
         }
         params = new HashMap<String, String>(params);
-        params.put("session_mode", "token");
 
         String paramString = "";
         for (Map.Entry<String, String> parameter : params.entrySet()) {

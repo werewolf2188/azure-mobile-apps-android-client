@@ -159,7 +159,8 @@ public class LoginManager {
             startUrl = UriHelper.CombinePath(mClient.getAlternateLoginHost().toString(), path);
             endUrl = UriHelper.CombinePath(mClient.getAlternateLoginHost().toString(), loginAsyncDoneUriFragment);
         }
-        startUrl = startUrl + this.normalizeParameters(parameters);
+        parameters = this.addSessionMode(parameters);
+        startUrl = startUrl + UriHelper.normalizeParameters(parameters);
         // Shows an interactive view with the provider's login
         showLoginUI(startUrl, endUrl, context, new LoginUIOperationCallback() {
 
@@ -257,7 +258,7 @@ public class LoginManager {
         if (this.mClient.getAlternateLoginHost() != null) {
             url = UriHelper.CombinePath(mClient.getAlternateLoginHost().toString(), path);
         }
-        url = url + this.normalizeParameters(parameters);
+        url = url + UriHelper.normalizeParameters(parameters);
 
         return authenticateWithToken(oAuthToken, url);
     }
@@ -574,14 +575,14 @@ public class LoginManager {
         return future;
     }
 
-    private String normalizeParameters(HashMap<String, String> parameters) {
+    private HashMap<String, String> addSessionMode(HashMap<String, String> parameters) {
         if (parameters == null) {
             parameters = new HashMap<String, String>();
         } else {
             parameters = new HashMap<String, String>(parameters);
         }
         parameters.put("session_mode", "token");
-        return UriHelper.normalizeParameters(parameters);
+        return parameters;
     }
 
     /**
