@@ -1444,34 +1444,26 @@ public class MobileServiceClient {
             throw new IllegalArgumentException("Invalid ServiceFilter");
         }
 
-        // Generate a new instance of the MobileServiceClient
-        MobileServiceClient newClient = new MobileServiceClient(this);
-
         // If there's no filter, set serviceFilter with the new filter.
         // Otherwise create a composed filter
         if (mServiceFilter == null) {
-            newClient.mServiceFilter = serviceFilter;
+            mServiceFilter = serviceFilter;
         } else {
-            final ServiceFilter oldServiceFilter = mServiceFilter;
-            final ServiceFilter newServiceFilter = serviceFilter;
+            final ServiceFilter internalFilter = mServiceFilter;
+            final ServiceFilter externalFilter = serviceFilter;
 
-            newClient.mServiceFilter = new ServiceFilter() {
-                // Create a filter that after executing the new ServiceFilter
-                // executes the existing filter
-                ServiceFilter externalServiceFilter = newServiceFilter;
-                ServiceFilter internalServiceFilter = oldServiceFilter;
-
+            mServiceFilter = new ServiceFilter() {
                 @Override
                 public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request,
                                                                              final NextServiceFilterCallback nextServiceFilterCallback) {
 
                     // Executes new ServiceFilter
-                    return externalServiceFilter.handleRequest(request, new NextServiceFilterCallback() {
+                    return externalFilter.handleRequest(request, new NextServiceFilterCallback() {
 
                         @Override
                         public ListenableFuture<ServiceFilterResponse> onNext(ServiceFilterRequest request) {
                             // Execute existing ServiceFilter
-                            return internalServiceFilter.handleRequest(request, nextServiceFilterCallback);
+                            return internalFilter.handleRequest(request, nextServiceFilterCallback);
                         }
                     });
 
@@ -1479,7 +1471,7 @@ public class MobileServiceClient {
             };
         }
 
-        return newClient;
+        return this;
     }
 
     /**
