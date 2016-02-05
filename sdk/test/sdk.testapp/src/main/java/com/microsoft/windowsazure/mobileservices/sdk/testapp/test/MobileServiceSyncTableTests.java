@@ -47,6 +47,7 @@ import com.microsoft.windowsazure.mobileservices.table.query.QueryOperations;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
 import com.microsoft.windowsazure.mobileservices.table.sync.MobileServiceJsonSyncTable;
 import com.microsoft.windowsazure.mobileservices.table.sync.MobileServiceSyncTable;
+import com.microsoft.windowsazure.mobileservices.table.sync.operations.MobileServiceTableOperationState;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationError;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationKind;
 import com.microsoft.windowsazure.mobileservices.table.sync.push.MobileServicePushFailedException;
@@ -746,7 +747,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         assertTrue(false);
     }
 
-    public void testUpdateOperation() throws Throwable {
+    public void testUpdateItem() throws Throwable {
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
@@ -795,8 +796,158 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
             tableOperationError.keepOperationAndUpdateItem(tableOperationError.getServerItem());
 
             assertEquals(client.getSyncContext().getPendingOperations(), 1);
-            StringIdType result = table.lookUp(item.Id).get();
+            JsonElement operations = store.read(QueryOperations.tableName("__operations"));
+            JsonObject op = operations.getAsJsonArray().get(0).getAsJsonObject();
 
+            // for insert, no backup in operation
+            assertTrue(op.get("item").isJsonNull());
+            assertEquals(TableOperationKind.Insert, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Pending, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            // local table updated with server item
+            StringIdType result = table.lookUp(item.Id).get();
+            assertEquals(serverItem.get("Id").getAsString(), result.Id);
+            assertEquals(serverItem.get("String").getAsString(), result.String);
+
+            return;
+        }
+
+        assertTrue(false);
+    }
+
+    public void testModifyOperation() throws Throwable {
+        final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
+
+        thrownExceptionFlag.Thrown = true;
+
+        final JsonObject serverItem = new JsonObject();
+        serverItem.addProperty("id", "abc");
+        serverItem.addProperty("String", "fooo");
+
+        Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
+            public Void apply(ServiceFilterRequest request) {
+                try {
+                    if (thrownExceptionFlag.Thrown) {
+                        throw new MobileServiceExceptionBase(new MobileServiceException(new Exception()), serverItem);
+                    }
+                } catch (Exception e) {
+                    serviceFilterContainer.Exception = e;
+                }
+
+                return null;
+            }
+        };
+
+        client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+
+        MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
+
+        StringIdType item = new StringIdType();
+
+        item.Id = "abc";
+        item.String = "what?";
+
+        table.insert(item).get();
+        assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+        try {
+            client.getSyncContext().push().get();
+        } catch (Exception ex) {
+            MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
+
+            assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
+            assertEquals(mspfe.getPushCompletionResult().getOperationErrors().size(), 1);
+            assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+            TableOperationError tableOperationError = mspfe.getPushCompletionResult().getOperationErrors().get(0);
+
+            JsonElement operations = store.read(QueryOperations.tableName("__operations"));
+            JsonObject op = operations.getAsJsonArray().get(0).getAsJsonObject();
+            assertEquals(TableOperationKind.Insert, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Failed, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            tableOperationError.modifyOperationType(TableOperationKind.Delete);
+
+            operations = store.read(QueryOperations.tableName("__operations"));
+            op = operations.getAsJsonArray().get(0).getAsJsonObject();
+            assertEquals(TableOperationKind.Delete, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Pending, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            // modify operation defaults to client item, delete backs up item in operation
+            JsonObject opItem = op.get("item").getAsJsonObject();
+            assertEquals(item.Id, opItem.get("Id").getAsString());
+            assertEquals(item.String, opItem.get("String").getAsString());
+
+            StringIdType result = table.lookUp(item.Id).get();
+            assertNull(result);
+
+            return;
+        }
+
+        assertTrue(false);
+    }
+
+    public void testModifyOperationUpdateItem() throws Throwable {
+        final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
+
+        thrownExceptionFlag.Thrown = true;
+
+        final JsonObject serverItem = new JsonObject();
+        serverItem.addProperty("id", "abc");
+        serverItem.addProperty("String", "fooo");
+
+        Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
+            public Void apply(ServiceFilterRequest request) {
+                try {
+                    if (thrownExceptionFlag.Thrown) {
+                        throw new MobileServiceExceptionBase(new MobileServiceException(new Exception()), serverItem);
+                    }
+                } catch (Exception e) {
+                    serviceFilterContainer.Exception = e;
+                }
+
+                return null;
+            }
+        };
+
+        client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+
+        MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
+
+        StringIdType item = new StringIdType();
+
+        item.Id = "abc";
+        item.String = "what?";
+
+        table.insert(item).get();
+        assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+        try {
+            client.getSyncContext().push().get();
+        } catch (Exception ex) {
+            MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
+
+            assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
+            assertEquals(mspfe.getPushCompletionResult().getOperationErrors().size(), 1);
+            assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+            TableOperationError tableOperationError = mspfe.getPushCompletionResult().getOperationErrors().get(0);
+
+            JsonElement operations = store.read(QueryOperations.tableName("__operations"));
+            JsonObject op = operations.getAsJsonArray().get(0).getAsJsonObject();
+            assertEquals(TableOperationKind.Insert, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Failed, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            tableOperationError.modifyOperationTypeAndUpdateItem(TableOperationKind.Update, tableOperationError.getServerItem());
+
+            operations = store.read(QueryOperations.tableName("__operations"));
+            op = operations.getAsJsonArray().get(0).getAsJsonObject();
+            assertEquals(TableOperationKind.Update, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Pending, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            assertTrue(op.get("item").isJsonNull());
+
+            StringIdType result = table.lookUp(item.Id).get();
             assertEquals(serverItem.get("Id").getAsString(), result.Id);
             assertEquals(serverItem.get("String").getAsString(), result.String);
 
