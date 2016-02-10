@@ -92,16 +92,25 @@ public class OfflineTests extends TestGroup {
         this.addTest(createSyncConflictAndResolveWithMethodTest(false));
         this.addTest(createSyncConflictAndResolveWithMethodTest(true));
 
-        this.addTest(LoginTests.createLogoutTest());
+        TestCase logOutTest = LoginTests.createLogoutTest();
+        logOutTest.setCanRunUnattended(false);
+        this.addTest(logOutTest);
+
         this.addTest(createSyncTestForAuthenticatedTable(false));
-        this.addTest(LoginTests.createLoginTest(MobileServiceAuthenticationProvider.Facebook));
+
+        TestCase facebookLoginTest = LoginTests.createLoginTest(MobileServiceAuthenticationProvider.Facebook);
+        facebookLoginTest.setCanRunUnattended(false);
+        this.addTest(facebookLoginTest);
 
         TestCase noOptimisticConcurrencyTest = createNoOptimisticConcurrencyTest();
         noOptimisticConcurrencyTest.setCanRunUnattended(false);
         this.addTest(noOptimisticConcurrencyTest);
 
         this.addTest(createSyncTestForAuthenticatedTable(true));
-        this.addTest(LoginTests.createLogoutTest());
+
+        TestCase logOutTest2 = LoginTests.createLogoutTest();
+        logOutTest2.setCanRunUnattended(false);
+        this.addTest(logOutTest2);
 
         this.addTest(createOfflineIncrementalSyncTest(null, false, false));
 
@@ -1910,12 +1919,12 @@ class OfflineReadyItem {
 
     public OfflineReadyItem(Random rndGen) {
         this.id = java.util.UUID.randomUUID().toString();
-    this.mName = "";// rndGen.nextLong();
-    this.mAge = 20;//rndGen.nextInt();
-    this.mFloatingNumber = rndGen.nextInt() * rndGen.nextDouble();
-    this.mDate = new Date();
-    this.mFlag = rndGen.nextInt(2) == 0;
-}
+        this.mName = "";// rndGen.nextLong();
+        this.mAge = 20;//rndGen.nextInt();
+        this.mFloatingNumber = rndGen.nextInt() * rndGen.nextDouble();
+        this.mDate = new Date();
+        this.mFlag = rndGen.nextInt(2) == 0;
+    }
 
     public String getId() {
         return id;
