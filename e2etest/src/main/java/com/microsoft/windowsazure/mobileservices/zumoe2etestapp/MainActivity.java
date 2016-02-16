@@ -125,6 +125,7 @@ public class MainActivity extends Activity {
             mAutomationPreferences.put("pref_storage_runtime_version", extras.getString("pref_storage_runtime_version", ""));
             mAutomationPreferences.put("pref_storage_container_url", extras.getString("pref_storage_container_url", ""));
             mAutomationPreferences.put("pref_storage_base64_token", extras.getString("pref_storage_base64_token", ""));
+            mAutomationPreferences.put("pref_GCM_sender_id", extras.getString("pref_GCM_sender_id", ""));
         }
 
         mTestCaseList = (ListView) findViewById(R.id.testCaseList);
