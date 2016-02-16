@@ -38,6 +38,7 @@ public abstract class TestCase {
 
     private boolean mCanRunUnattended;
 
+    private int mtryCount = 1;
     private StringBuilder mTestLog;
 
     private Date mStartTime;
@@ -101,6 +102,18 @@ public abstract class TestCase {
     public boolean canRunUnattended() {
         return mCanRunUnattended;
     }
+    private boolean isRetryCountSet = false;
+
+    public void setRetryCount(int retryCount) {
+        if (!isRetryCountSet) {
+            mtryCount  = mtryCount + retryCount;
+            isRetryCountSet = true;
+        }
+    }
+
+    public int retryCount() {
+        return mtryCount - 1;
+    }
 
     public void setCanRunUnattended(boolean canRunUnattended) {
         mCanRunUnattended = canRunUnattended;
@@ -117,28 +130,32 @@ public abstract class TestCase {
         try {
             this.mStartTime = new Date();
             final TestCase thisTest = this;
-            executeTest(client, new TestExecutionCallback() {
 
-                @Override
-                public void onTestStart(TestCase test) {
-                    // This will never be called
-                }
+            while (mtryCount > 0) {
+                executeTest(client, new TestExecutionCallback() {
 
-                @Override
-                public void onTestComplete(TestCase test, TestResult result) {
-                    thisTest.mEndTime = new Date();
-                    if (result != null && result.getTestCase() == null) {
-                        result.setTestCase(thisTest);
+                    @Override
+                    public void onTestStart(TestCase test) {
+                        // This will never be called
                     }
-                    callback.onTestComplete(test, result);
-                }
 
-                @Override
-                public void onTestGroupComplete(TestGroup group, List<TestResult> results) {
-                    // This will never be called
-                }
+                    @Override
+                    public void onTestComplete(TestCase test, TestResult result) {
+                        thisTest.mEndTime = new Date();
+                        if (result != null && result.getTestCase() == null) {
+                            result.setTestCase(thisTest);
+                        }
+                        callback.onTestComplete(test, result);
+                    }
 
-            });
+                    @Override
+                    public void onTestGroupComplete(TestGroup group, List<TestResult> results) {
+                        // This will never be called
+                    }
+
+                });
+                mtryCount--;
+            }
         } catch (Exception e) {
             this.mEndTime = new Date();
 
