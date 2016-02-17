@@ -351,7 +351,7 @@ public class UpdateDeleteTests extends TestGroup {
 
                             MobileServiceException ex = (MobileServiceException) exception.getCause();
 
-                            String message = "An item with id '" + entity.id + "' does not exist.";
+                            String message = "does not exist";
 
                             if (!ex.getMessage().contains(message) && !ex.getMessage().contains("404")) {
                                 createResultFromException(result, new ExpectedValueException(message, ex.getMessage()));
@@ -416,7 +416,7 @@ public class UpdateDeleteTests extends TestGroup {
 
                         MobileServiceException ex = (MobileServiceException) exception.getCause();
 
-                        String message = "An item with id '" + entity.id + "' does not exist.";
+                        String message = "does not exist";
 
                         if (!ex.getMessage().contains(message) && !ex.getMessage().contains("404")) {
                             createResultFromException(result, new ExpectedValueException(message, ex.getMessage()));
@@ -560,7 +560,7 @@ public class UpdateDeleteTests extends TestGroup {
 
                         MobileServiceException ex = (MobileServiceException) exception.getCause();
 
-                        String message = "An item with id '" + element.id + "' does not exist.";
+                        String message = "does not exist";
 
                         if (!ex.getMessage().contains(message) && !ex.getMessage().contains("404")) {
                             createResultFromException(result, new ExpectedValueException(message, ex.getMessage()));
