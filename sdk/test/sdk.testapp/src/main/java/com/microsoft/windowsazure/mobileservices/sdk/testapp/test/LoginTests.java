@@ -19,6 +19,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.sdk.testapp.test;
 
+import android.content.Context;
 import android.test.InstrumentationTestCase;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -26,6 +27,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
 import com.microsoft.windowsazure.mobileservices.MobileServiceException;
 import com.microsoft.windowsazure.mobileservices.UserAuthenticationCallback;
+import com.microsoft.windowsazure.mobileservices.authentication.LoginManager;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceUser;
 import com.microsoft.windowsazure.mobileservices.http.NextServiceFilterCallback;
@@ -34,6 +36,7 @@ import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequest;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.framework.filters.ServiceFilterResponseMock;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.test.types.ResultsContainer;
+import com.microsoft.windowsazure.mobileservices.table.sync.MobileServiceSyncTable;
 import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.Protocol;
 import com.squareup.okhttp.internal.http.StatusLine;
@@ -43,15 +46,17 @@ import junit.framework.Assert;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class LoginTests extends InstrumentationTestCase {
-
     String appUrl = "";
+    String urlPrefix = "";
 
     @Override
     protected void setUp() throws Exception {
         appUrl = "http://myapp.com/";
+        urlPrefix = ".auth/login/";
         super.setUp();
     }
 
@@ -115,9 +120,7 @@ public class LoginTests extends InstrumentationTestCase {
         }
 
         // Assert
-        String urlPrefix = ".auth/login/";
-        String expectedURL = appUrl + urlPrefix + provider.toString().toLowerCase(Locale.getDefault());
-        assertEquals(expectedURL, result.getRequestUrl());
+        assertEquals(buildExpectedUrl(provider, null), result.getRequestUrl());
     }
 
     public void testLoginOperationWithParameter() throws Throwable {
@@ -133,6 +136,13 @@ public class LoginTests extends InstrumentationTestCase {
     }
 
     private void testLoginOperationWithParameter(final Object provider) throws Throwable {
+        HashMap<String, String> parameters = new HashMap<>();
+        parameters.put("p1", "p1value");
+        parameters.put("p2", "p2value");
+        testLoginOperationWithParameter(provider, parameters);
+    }
+
+    private void testLoginOperationWithParameter(final Object provider, HashMap<String, String> parameters) throws Throwable {
         final ResultsContainer result = new ResultsContainer();
 
         // Create client
@@ -161,15 +171,6 @@ public class LoginTests extends InstrumentationTestCase {
             }
         });
 
-
-        HashMap<String, String> parameters = new HashMap<>();
-
-        parameters.put("p1", "p1value");
-        parameters.put("p2", "p2value");
-
-
-        String parameterQueryString = "?p2=p2value&p1=p1value";
-
         try {
             MobileServiceUser user;
 
@@ -184,9 +185,7 @@ public class LoginTests extends InstrumentationTestCase {
         }
 
         // Assert
-        String urlPrefix = ".auth/login/";
-        String expectedURL = appUrl + urlPrefix + provider.toString().toLowerCase(Locale.getDefault()) + parameterQueryString;
-        assertEquals(expectedURL, result.getRequestUrl());
+        assertEquals(buildExpectedUrl(provider, parameters), result.getRequestUrl());
     }
 
     public void testLoginCallbackOperation() throws Throwable {
@@ -256,9 +255,7 @@ public class LoginTests extends InstrumentationTestCase {
         latch.await();
 
         // Assert
-        String urlPrefix = ".auth/login/";
-        String expectedURL = appUrl + urlPrefix + provider.toString().toLowerCase(Locale.getDefault());
-        assertEquals(expectedURL, result.getRequestUrl());
+        assertEquals(buildExpectedUrl(provider, null), result.getRequestUrl());
     }
 
     public void testLoginShouldThrowError() throws Throwable {
@@ -267,6 +264,36 @@ public class LoginTests extends InstrumentationTestCase {
         testLoginShouldThrowError(MobileServiceAuthenticationProvider.MicrosoftAccount);
         testLoginShouldThrowError(MobileServiceAuthenticationProvider.Twitter);
         testLoginShouldThrowError(MobileServiceAuthenticationProvider.Google);
+    }
+
+    class LoginManagerMock extends LoginManager {
+        String mStartUrl = "";
+
+        public LoginManagerMock(MobileServiceClient client) {
+            super(client);
+        }
+
+        @Override
+        protected void showLoginUI(final String startUrl, final String endUrl, final Context context, final LoginUIOperationCallback callback) {
+            this.mStartUrl = startUrl;
+        }
+    }
+
+    public void testSessionMode() throws Throwable {
+        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        LoginManagerMock loginManager = new LoginManagerMock(client);
+
+        HashMap<String, String> params = new HashMap<>();
+        params.put("session_mode", "cookie");
+
+        loginManager.authenticate("Facebook", (Context) null, params);
+
+        // no modification to user supplied params object
+        assertEquals("cookie", params.get("session_mode"));
+
+        // url overrides user supplied session mode with token
+        assertTrue(loginManager.mStartUrl.contains("session_mode=token"));
+        assertFalse(loginManager.mStartUrl.contains("session_mode=cookie"));
     }
 
     private void testLoginShouldThrowError(final MobileServiceAuthenticationProvider provider) throws Throwable {
@@ -425,5 +452,24 @@ public class LoginTests extends InstrumentationTestCase {
         }
 
         assertNull(client.getCurrentUser());
+    }
+
+    private String buildExpectedUrl(Object provider, HashMap<String, String> params) {
+        if (params == null) {
+            params = new HashMap<String, String>();
+        }
+        params = new HashMap<String, String>(params);
+
+        String paramString = "";
+        for (Map.Entry<String, String> parameter : params.entrySet()) {
+            if (paramString == "") {
+                paramString = "?";
+            } else {
+                paramString += "&";
+            }
+            paramString += parameter.getKey() + "=" + parameter.getValue();
+        }
+
+        return appUrl + urlPrefix + provider.toString().toLowerCase(Locale.getDefault()) + paramString;
     }
 }

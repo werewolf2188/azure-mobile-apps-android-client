@@ -135,10 +135,6 @@ public class LoginManager {
     public ListenableFuture<MobileServiceUser> authenticate(String provider, Context context, HashMap<String, String> parameters) {
         final SettableFuture<MobileServiceUser> future = SettableFuture.create();
 
-        if (context == null) {
-            throw new IllegalArgumentException("context cannot be null");
-        }
-
         if (provider == null || provider.length() == 0) {
             throw new IllegalArgumentException("provider cannot be null or empty");
         }
@@ -159,6 +155,7 @@ public class LoginManager {
             startUrl = UriHelper.CombinePath(mClient.getAlternateLoginHost().toString(), path);
             endUrl = UriHelper.CombinePath(mClient.getAlternateLoginHost().toString(), loginAsyncDoneUriFragment);
         }
+        parameters = this.addSessionMode(parameters);
         startUrl = startUrl + UriHelper.normalizeParameters(parameters);
         // Shows an interactive view with the provider's login
         showLoginUI(startUrl, endUrl, context, new LoginUIOperationCallback() {
@@ -344,7 +341,10 @@ public class LoginManager {
      * @param context  The context used to create the authentication dialog
      * @param callback Callback to invoke when the authentication process finishes
      */
-    private void showLoginUI(final String startUrl, final String endUrl, final Context context, final LoginUIOperationCallback callback) {
+    protected void showLoginUI(final String startUrl, final String endUrl, final Context context, final LoginUIOperationCallback callback) {
+        if (context == null) {
+            throw new IllegalArgumentException("context cannot be null");
+        }
 
         Activity activity = (Activity) context;
 
@@ -574,11 +574,21 @@ public class LoginManager {
         return future;
     }
 
+    private HashMap<String, String> addSessionMode(HashMap<String, String> parameters) {
+        if (parameters == null) {
+            parameters = new HashMap<>();
+        } else {
+            parameters = new HashMap<>(parameters);
+        }
+        parameters.put("session_mode", "token");
+        return parameters;
+    }
+
     /**
      * Internal callback used after the interactive authentication UI is
      * completed
      */
-    interface LoginUIOperationCallback {
+    protected interface LoginUIOperationCallback {
         /**
          * Method to call if the operation finishes successfully
          *
