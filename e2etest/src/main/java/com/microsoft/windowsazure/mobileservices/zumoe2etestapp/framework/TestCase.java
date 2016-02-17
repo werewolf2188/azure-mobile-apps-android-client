@@ -38,7 +38,7 @@ public abstract class TestCase {
 
     private boolean mCanRunUnattended;
 
-    private int mtryCount = 1;
+    private int mTryCount = 1;
     private StringBuilder mTestLog;
 
     private Date mStartTime;
@@ -106,13 +106,9 @@ public abstract class TestCase {
 
     public void setRetryCount(int retryCount) {
         if (!isRetryCountSet) {
-            mtryCount  = mtryCount + retryCount;
+            mTryCount = mTryCount + retryCount;
             isRetryCountSet = true;
         }
-    }
-
-    public int retryCount() {
-        return mtryCount - 1;
     }
 
     public void setCanRunUnattended(boolean canRunUnattended) {
@@ -131,7 +127,7 @@ public abstract class TestCase {
             this.mStartTime = new Date();
             final TestCase thisTest = this;
 
-            while (mtryCount > 0) {
+            while (mTryCount > 0) {
                 executeTest(client, new TestExecutionCallback() {
 
                     @Override
@@ -154,7 +150,12 @@ public abstract class TestCase {
                     }
 
                 });
-                mtryCount--;
+                if(mTryCount > 1)
+                {
+                    log("Re-running the test case again, Current Retry Count set to" + this.mTryCount);
+                }
+
+                mTryCount--;
             }
         } catch (Exception e) {
             this.mEndTime = new Date();
