@@ -122,7 +122,7 @@ public class StorageLogger {
     private JsonArray createMasterRunResult(int failedTestCount, int passedTestCount, int skippedTestCount,
                                             int totalTestCount, Date startTime, Date endTime, String fileName) {
         JsonObject test = new JsonObject();
-        test.addProperty("full_name", mRuntime + " " + dateToString(startTime));
+        test.addProperty("full_name", "Android");
         test.addProperty("outcome", failedTestCount == 0 ? "Passed" : "Failed");
         test.addProperty("start_time", getFileTime(startTime));
         test.addProperty("end_time", getFileTime(endTime));
