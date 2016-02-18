@@ -19,6 +19,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.sdk.testapp.test;
 
+import android.app.Service;
 import android.test.InstrumentationTestCase;
 
 import com.google.common.base.Function;
@@ -46,6 +47,7 @@ import com.microsoft.windowsazure.mobileservices.table.query.QueryOperations;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
 import com.microsoft.windowsazure.mobileservices.table.sync.MobileServiceJsonSyncTable;
 import com.microsoft.windowsazure.mobileservices.table.sync.MobileServiceSyncTable;
+import com.microsoft.windowsazure.mobileservices.table.sync.operations.MobileServiceTableOperationState;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationError;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationKind;
 import com.microsoft.windowsazure.mobileservices.table.sync.push.MobileServicePushFailedException;
@@ -72,11 +74,15 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     GsonBuilder gsonBuilder;
     String OperationQueue = "__operations";
     String SyncErrors = "__errors";
+    MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
+    ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
+    MobileServiceClient client;
 
     protected void setUp() throws Exception {
         appUrl = "http://myapp.com/";
         appKey = "qwerty";
         gsonBuilder = new GsonBuilder();
+        client = buildClient();
         super.setUp();
     }
 
@@ -84,15 +90,18 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         super.tearDown();
     }
 
-    public void testPushExecutesThePendingOperationsInOrder() throws InterruptedException, ExecutionException, MalformedURLException {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
+    private MobileServiceClient buildClient() throws Exception {
+        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
+        return client;
+    }
+
+    public void testPushExecutesThePendingOperationsInOrder() throws Exception {
         ServiceFilterContainer serviceFilterContainer1 = new ServiceFilterContainer();
 
-        MobileServiceClient client1 = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        MobileServiceClient client1 = buildClient();
 
         client1 = client1.withFilter(getTestFilter(serviceFilterContainer1, ""));
-
-        client1.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceJsonSyncTable table = client1.getSyncTable("someTable");
 
@@ -121,11 +130,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         assertEquals(serviceFilterContainer2.Requests.size(), 2);
 
         assertEquals(serviceFilterContainer2.Requests.get(0).Content, item1.toString());
-        // Assert.AreEqual(hijack.Requests[0].Headers.GetValues("X-ZUMO-FEATURES").First(),
-        // "OL");
         assertEquals(serviceFilterContainer2.Requests.get(1).Content, item2.toString());
-        // Assert.AreEqual(hijack.Requests[1].Headers.GetValues("X-ZUMO-FEATURES").First(),
-        // "OL");
 
         // create yet another service to make sure the old items were purged
         // from queue
@@ -142,16 +147,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testPullThrowsWhenPushThrows() throws MalformedURLException, InterruptedException, ExecutionException {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
-        client = client.withFilter(getTestFilter(serviceFilterContainer, 401, "")); // for
-        // push
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
+        client = client.withFilter(getTestFilter(serviceFilterContainer, 401, ""));
 
         // insert an item but don't push
         MobileServiceJsonSyncTable table = client.getSyncTable("someTable");
@@ -161,10 +157,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         table.insert(jsonObject).get();
 
-        assertEquals(store.Tables.get(table.getName().toLowerCase(Locale.getDefault())).size(), 1); // item
-        // is
-        // inserted
-        // this should trigger a push
+        assertEquals(store.Tables.get(table.getName().toLowerCase(Locale.getDefault())).size(), 1);
         try {
             table.pull(null).get();
             fail("MobileServicePushFailedException expected");
@@ -183,68 +176,41 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
     public void testPullDoesNotPurgeWhenItemIsMissing() throws InterruptedException, ExecutionException, MalformedURLException {
 
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         client = client.withFilter(getTestFilter(serviceFilterContainer, false, "{\"id\":\"abc\",\"String\":\"Hey\"}", "[{\"id\":\"def\",\"String\":\"World\"}]"));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceJsonSyncTable table = client.getSyncTable("someTable");
 
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("id", "abc");
 
-        table.insert(jsonObject).get(); // insert an item
+        table.insert(jsonObject).get();
 
-        client.getSyncContext().push().get(); // push to clear the queue
+        client.getSyncContext().push().get();
 
-        // now pull
         table.pull(null).get();
 
-        assertEquals(store.Tables.get(table.getName().toLowerCase(Locale.getDefault())).size(), 2); // 1
-        // from
-        // remote
-        // and
-        // 1
-        // from
-        // local
+        assertEquals(store.Tables.get(table.getName().toLowerCase(Locale.getDefault())).size(), 2);
         assertEquals(serviceFilterContainer.Requests.size(), 3);
     }
 
     public void testPullDoesNotTriggerPushWhenThereIsNoOperationInTable() throws InterruptedException, ExecutionException, MalformedURLException {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        store.ReadResponses.add("[{\"id\":\"abc\",\"String\":\"Hey\"},{\"id\":\"def\",\"String\":\"World\"}]"); // for
-        // pull
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        store.ReadResponses.add("[{\"id\":\"abc\",\"String\":\"Hey\"},{\"id\":\"def\",\"String\":\"World\"}]");
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, false, "{\"id\":\"abc\",\"String\":\"Hey\"}",
                 "[{\"id\":\"abc\",\"String\":\"Hey\"},{\"id\":\"def\",\"String\":\"World\"}]"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
-        // insert item in pull table
         MobileServiceJsonSyncTable table1 = client.getSyncTable("someTable");
 
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("id", "abc");
 
-        table1.insert(jsonObject).get(); // insert an item
+        table1.insert(jsonObject).get();
 
-        // but push to clear the queue
         client.getSyncContext().push().get();
 
-        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 1); // item
-        // is
-        // inserted
-        assertEquals(serviceFilterContainer.Requests.size(), 1); // first push
+        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 1);
+        assertEquals(serviceFilterContainer.Requests.size(), 1);
 
-        // then insert item in other table
         MobileServiceSyncTable<StringIdType> table2 = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -256,125 +222,42 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         table1.pull(null).get();
 
-        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 2); // table
-        // should
-        // contain
-        // 2
-        // pulled
-        // items
-        assertEquals(serviceFilterContainer.Requests.size(), 3); // 1 for push
-        // and 1 for
-        // pull
-        assertEquals(store.Tables.get(table2.getName().toLowerCase(Locale.getDefault())).size(), 1); // this
-        // table
-        // should
-        // not
-        // be
-        // touched
+        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 2);
+        assertEquals(serviceFilterContainer.Requests.size(), 3);
+        assertEquals(store.Tables.get(table2.getName().toLowerCase(Locale.getDefault())).size(), 1);
     }
 
     public void testPullTriggersPushWhenThereIsOperationInTable() throws InterruptedException, ExecutionException, MalformedURLException {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
+        store.ReadResponses.add("[{\"id\":\"abc\",\"String\":\"Hey\"},{\"id\":\"def\",\"String\":\"World\"}]");
 
-        store.ReadResponses.add("[{\"id\":\"abc\",\"String\":\"Hey\"},{\"id\":\"def\",\"String\":\"World\"}]"); // for
-        // pull
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
-        client = client.withFilter(getTestFilter(serviceFilterContainer, false, "{\"id\":\"abc\",\"String\":\"Hey\"}", // for
-                // insert
-                "[{\"id\":\"abc\",\"String\":\"Hey\"},{\"id\":\"def\",\"String\":\"World\"}]" // remote
-                // item
+        client = client.withFilter(getTestFilter(serviceFilterContainer, false, "{\"id\":\"abc\",\"String\":\"Hey\"}",
+                "[{\"id\":\"abc\",\"String\":\"Hey\"},{\"id\":\"def\",\"String\":\"World\"}]"
         ));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
-        // insert an item but don't push
         MobileServiceJsonSyncTable table1 = client.getSyncTable("someTable");
 
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("id", "abc");
 
-        table1.insert(jsonObject).get(); // insert an item
+        table1.insert(jsonObject).get();
 
-        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 1); // item
-        // is
-        // inserted
+        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 1);
 
-        // this should trigger a push
         table1.pull(null).get();
 
-        assertEquals(serviceFilterContainer.Requests.size(), 3); // 1 for push
-        // and 2 for
-        // pull
-        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 2); // table
-        // is
-        // populated
+        assertEquals(serviceFilterContainer.Requests.size(), 3);
+        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 2);
     }
 
-    // REVISAR EL TEMA DE LOS HANDLERS Y LAS EXCEPCIONES
-    // public void testPullThrowsWhenPushThrows()
-    // throws MalformedURLException, InterruptedException,
-    // ExecutionException {
-    // MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-    //
-    // MobileServiceClient client = null;
-    //
-    // client = new MobileServiceClient(appUrl, getInstrumentation()
-    // .getTargetContext());
-    //
-    // client = client.withFilter(getTestFilter(404)); // for push
-    //
-    // client.getSyncContext().initialize(store, new SimpleSyncHandler())
-    // .get();
-    //
-    // // insert an item but don't push
-    // MobileServiceJsonSyncTable table = client.getSyncTable("someTable");
-    //
-    // JsonObject jsonObject = new JsonObject();
-    // jsonObject.addProperty("id", "abc");
-    //
-    // table.insert(jsonObject).get(); // insert an item
-    //
-    // assertEquals(store.Tables.get(table.getName().toLowerCase()).size(), 1);
-    // // item
-    // // is
-    // // inserted
-    //
-    // try {
-    // table.pull(null).get();
-    // } catch (Throwable throwable) {
-    //
-    // if (throwable instanceof MobileServicePushFailedException) {
-    // MobileServicePushFailedException ex = (MobileServicePushFailedException)
-    // throwable;
-    // assertEquals(ex.getPushCompletionResult().getOperationErrors()
-    // .size(), 1);
-    // }
-    // }
-    //
-    // // Assert.AreEqual(hijack.Requests.Count, 1); // 1 for push
-    // }
-
     public void testPullSucceds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
-
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         String updatedAt = sdf.format(new Date());
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, false,
-                "{\"count\":\"2\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt + "\"}]}"// remote
-                // item
+                "{\"count\":\"2\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt + "\"}]}"
         ));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -391,23 +274,14 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testPullNoSkipSucceds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
-
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         String updatedAt = sdf.format(new Date());
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, false,
-                "{\"count\":\"2\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt + "\"}]}"// remote
-                // item
+                "{\"count\":\"2\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt + "\"}]}"
         ));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -424,23 +298,14 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testPullSuccedsNoTopNoOrderBy() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
-
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         String updatedAt = sdf.format(new Date());
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, false,
-                "{\"count\":\"2\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt + "\"}]}"// remote
-                // item
+                "{\"count\":\"2\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt + "\"}]}"
         ));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -457,12 +322,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testIncrementalPullSucceds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
-
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         String queryKey = "QueryKey";
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -473,11 +333,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         client = client.withFilter(getTestFilter(serviceFilterContainer, false,
                 "{\"count\":\"4\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt1 + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt1 + "\"}]}",
                 "[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt2 + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt2 + "\"}]"
-                // remote
-                // item
         ));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -496,17 +352,12 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
                 EncodingUtilities
                         .percentEncodeSpaces(
                                 "http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27noMatch%27)%20and%20" +
-                                        "(updatedAt%20ge%20(datetimeoffset%27"+updatedAt1 +"%27))&$top=50&$orderby=updatedAt%20asc&__includeDeleted=true"));
+                                        "(updatedAt%20ge%20(datetimeoffset%27" + updatedAt1 + "%27))&$top=50&$orderby=updatedAt%20asc&__includeDeleted=true"));
     }
 
     public void testIncrementalPullSaveLastUpdatedAtDate() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
-
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         String queryKey = "QueryKey";
         String incrementalPullStrategyTable = "__incrementalPullData";
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -517,11 +368,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         client = client.withFilter(getTestFilter(serviceFilterContainer, false,
                 "{\"count\":\"4\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt1 + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt1 + "\"}]}",
                 "[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt2 + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt2 + "\"}]"
-                // remote
-                // item
         ));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -540,13 +387,8 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testincrementalSyncUsesSkipWhenMaxUpdateAtIsSame() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
-
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         String queryKey = "QueryKey";
         String incrementalPullStrategyTable = "__incrementalPullData";
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -557,15 +399,13 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         String updatedAt2 = sdf.format(d);
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, false,
-                        "[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt1 + "\"}," +
+                "[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt1 + "\"}," +
                         "{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt1 + "\"}]",
                 "[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt1 + "\"}," +
                         "{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt1 + "\"}]",
                 "[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt2 + "\"}," +
                         "{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt2 + "\"}]"
         ));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -577,26 +417,20 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         assertEquals(
                 serviceFilterContainer.Requests.get(2).Url,
                 EncodingUtilities
-                        .percentEncodeSpaces("http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27Hey%27)%20and%20(updatedAt%20ge%20(datetimeoffset%27"+updatedAt1+"%27))" +
+                        .percentEncodeSpaces("http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27Hey%27)%20and%20(updatedAt%20ge%20(datetimeoffset%27" + updatedAt1 + "%27))" +
                                 "&$top=50&$skip=2&" +
                                 "$orderby=updatedAt%20asc&__includeDeleted=true"));
         // Skip removed
         assertEquals(
                 serviceFilterContainer.Requests.get(3).Url,
                 EncodingUtilities
-                        .percentEncodeSpaces("http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27Hey%27)%20and%20(updatedAt%20ge%20(datetimeoffset%27"+updatedAt2+"%27))" +
+                        .percentEncodeSpaces("http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27Hey%27)%20and%20(updatedAt%20ge%20(datetimeoffset%27" + updatedAt2 + "%27))" +
                                 "&$top=50&$orderby=updatedAt%20asc&__includeDeleted=true"));
     }
 
     public void testPurgeDoesNotThrowExceptionWhenThereIsNoOperationInTable() throws MalformedURLException, InterruptedException, ExecutionException {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         // insert item in purge table
         MobileServiceJsonSyncTable table1 = client.getSyncTable("someTable");
@@ -608,9 +442,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         // but push to clear the queue
         client.getSyncContext().push().get();
 
-        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 1);// item
-        // is
-        // inserted
+        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 1);
 
         // then insert item in other table
         MobileServiceSyncTable<StringIdType> table2 = client.getSyncTable(StringIdType.class);
@@ -625,35 +457,14 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         // try purge on first table now
         table1.purge(null).get();
 
-        assertEquals(store.DeleteQueries.get(0).getTableName(), SyncErrors); // push
-        // deletes
-        // all
-        // sync
-        // erros
-
+        assertEquals(store.DeleteQueries.get(0).getTableName(), SyncErrors);
         assertEquals(store.DeleteQueries.get(1).getTableName(), table1.getName().toLowerCase(Locale.getDefault()));
-        // purged table
-        assertEquals(serviceFilterContainer.Requests.size(), 1); // still 1
-        // means no
-        // other
-        // push happened
-        assertEquals(store.Tables.get(table2.getName().toLowerCase(Locale.getDefault())).size(), 1); // this
-        // table
-        // should
-        // not
-        // be
-        // touched
+        assertEquals(serviceFilterContainer.Requests.size(), 1); // 1 means no other push happened
+        assertEquals(store.Tables.get(table2.getName().toLowerCase(Locale.getDefault())).size(), 1); // should not be touched
     }
 
     public void testPurgeThrowsExceptionWhenThereIsOperationInTable() throws InterruptedException, ExecutionException, MalformedURLException {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         client = client.withFilter(getTestFilter(serviceFilterContainer, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         // insert an item but don't push
         MobileServiceJsonSyncTable table1 = client.getSyncTable("someTable");
@@ -662,33 +473,22 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         table1.insert(jsonObject).get();
 
-        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 1); // item
-        // is
-        // inserted
+        assertEquals(store.Tables.get(table1.getName().toLowerCase(Locale.getDefault())).size(), 1);
 
         try {
-            // this should throw an exception
             table1.purge(null).get();
         } catch (Throwable throwable) {
             if (throwable.getCause() instanceof MobileServiceException) {
-                assertEquals(store.DeleteQueries.size(), 0); // no purge queries
+                assertEquals(store.DeleteQueries.size(), 0);
                 return;
             }
         }
 
         fail("MobileServiceException expected");
-
     }
 
     public void testPushExecutesThePendingOperations() throws InterruptedException, ExecutionException, MalformedURLException {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         client = client.withFilter(getTestFilter(serviceFilterContainer, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -705,20 +505,11 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteDoesNotUpsertResultOnStoreWhenOperationIsPushed() throws InterruptedException, ExecutionException, MalformedURLException {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = null;
-
-        client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         client = client.withFilter(getTestFilter(serviceFilterContainer, "{\"id\":\"abc\",\"String\":\"Hey\"}", // for
                 // insert
                 "{\"id\":\"abc\",\"String\":\"Hey\"}"// for delete
 
         ));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -727,12 +518,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         item.Id = "abc";
         item.String = "what?";
 
-        // first add an item
         table.insert(item).get();
 
         assertEquals(store.Tables.get(table.getName().toLowerCase(Locale.getDefault())).size(), 1);
 
-        // for good measure also push it
         client.getSyncContext().push().get();
 
         table.delete(item).get();
@@ -742,23 +531,12 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         // now play it on server
         client.getSyncContext().push().get();
 
-        // wait we don't want to upsert the result back because its delete
-        // operation
+        // wait we don't want to upsert the result back because its delete op
         assertEquals(store.Tables.get(table.getName().toLowerCase(Locale.getDefault())).size(), 0);
-        // looks good
     }
 
     public void testDeleteCancelsAllWhenInsertIsInQueue() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = null;
-
-        client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         client = client.withFilter(getTestFilter(serviceFilterContainer, "[{\"id\":\"abc\",\"String\":\"Hey\"}]"));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -779,28 +557,19 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testOperationErrorLoadCorrectly() throws Throwable {
-
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-
         OperationErrorList operationErrorList = OperationErrorList.load(store);
 
         TableOperationError tableOperationError = new TableOperationError("Id1", TableOperationKind.Update, "Table1", "ItemId", null, "Message", 400, null, null);
 
         operationErrorList.add(tableOperationError);
 
-        //Load with the previous inserted operation
         OperationErrorList.load(store);
-
     }
 
     public void testCancelAndDiscardItem() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -818,8 +587,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -832,8 +599,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
 
             assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
@@ -842,7 +608,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
             TableOperationError tableOperationError = mspfe.getPushCompletionResult().getOperationErrors().get(0);
 
-            client.getSyncContext().cancelAndDiscardItem(tableOperationError);
+            tableOperationError.cancelAndDiscardItem();
 
             assertEquals(client.getSyncContext().getPendingOperations(), 0);
 
@@ -857,18 +623,13 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testCancelAndUpdateItem() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
 
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         final JsonObject serverItem = new JsonObject();
         serverItem.addProperty("id", "abc");
         serverItem.addProperty("String", "fooo");
-
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -886,8 +647,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -900,17 +659,16 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
 
             assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
             assertEquals(mspfe.getPushCompletionResult().getOperationErrors().size(), 1);
             assertEquals(client.getSyncContext().getPendingOperations(), 1);
 
-            TableOperationError tableOperationError =mspfe.getPushCompletionResult().getOperationErrors().get(0);
+            TableOperationError tableOperationError = mspfe.getPushCompletionResult().getOperationErrors().get(0);
 
-            client.getSyncContext().cancelAndUpdateItem(tableOperationError);
+            tableOperationError.cancelAndUpdateItem();
 
             assertEquals(client.getSyncContext().getPendingOperations(), 0);
 
@@ -925,14 +683,284 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         assertTrue(false);
     }
 
-    public void testPushAbortOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
+    public void testCancelAndUpdateUserItem() throws Throwable {
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
 
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        final JsonObject serverItem = new JsonObject();
+        serverItem.addProperty("id", "abc");
+        serverItem.addProperty("String", "fooo");
+
+        Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
+            public Void apply(ServiceFilterRequest request) {
+                try {
+                    if (thrownExceptionFlag.Thrown) {
+                        throw new MobileServiceExceptionBase(new MobileServiceException(new Exception()), serverItem);
+                    }
+                } catch (Exception e) {
+                    serviceFilterContainer.Exception = e;
+                }
+
+                return null;
+            }
+        };
+
+        client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+
+        MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
+
+        StringIdType item = new StringIdType();
+
+        item.Id = "abc";
+        item.String = "what?";
+
+        table.insert(item).get();
+        assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+        try {
+            client.getSyncContext().push().get();
+        } catch (Exception ex) {
+            MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
+
+            assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
+            assertEquals(mspfe.getPushCompletionResult().getOperationErrors().size(), 1);
+            assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+            TableOperationError tableOperationError = mspfe.getPushCompletionResult().getOperationErrors().get(0);
+
+            JsonObject userObject = new JsonObject();
+            userObject.addProperty("id", tableOperationError.getItemId());
+            userObject.addProperty("String", "user");
+            tableOperationError.cancelAndUpdateItem(userObject);
+
+            assertEquals(client.getSyncContext().getPendingOperations(), 0);
+
+            StringIdType result = table.lookUp(item.Id).get();
+
+            assertEquals(item.Id, result.Id);
+            assertEquals("user", result.String);
+
+            return;
+        }
+
+        assertTrue(false);
+    }
+
+    public void testUpdateItem() throws Throwable {
+        final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
+
+        thrownExceptionFlag.Thrown = true;
+
+        final JsonObject serverItem = new JsonObject();
+        serverItem.addProperty("id", "abc");
+        serverItem.addProperty("String", "fooo");
+
+        Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
+            public Void apply(ServiceFilterRequest request) {
+                try {
+                    if (thrownExceptionFlag.Thrown) {
+                        throw new MobileServiceExceptionBase(new MobileServiceException(new Exception()), serverItem);
+                    }
+                } catch (Exception e) {
+                    serviceFilterContainer.Exception = e;
+                }
+
+                return null;
+            }
+        };
+
+        client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+
+        MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
+
+        StringIdType item = new StringIdType();
+
+        item.Id = "abc";
+        item.String = "what?";
+
+        table.insert(item).get();
+        assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+        try {
+            client.getSyncContext().push().get();
+        } catch (Exception ex) {
+            MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
+
+            assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
+            assertEquals(mspfe.getPushCompletionResult().getOperationErrors().size(), 1);
+            assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+            TableOperationError tableOperationError = mspfe.getPushCompletionResult().getOperationErrors().get(0);
+
+            tableOperationError.keepOperationAndUpdateItem(tableOperationError.getServerItem());
+
+            assertEquals(client.getSyncContext().getPendingOperations(), 1);
+            JsonElement operations = store.read(QueryOperations.tableName("__operations"));
+            JsonObject op = operations.getAsJsonArray().get(0).getAsJsonObject();
+
+            // for insert, no backup in operation
+            assertTrue(op.get("item").isJsonNull());
+            assertEquals(TableOperationKind.Insert, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Pending, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            // local table updated with server item
+            StringIdType result = table.lookUp(item.Id).get();
+            assertEquals(serverItem.get("Id").getAsString(), result.Id);
+            assertEquals(serverItem.get("String").getAsString(), result.String);
+
+            return;
+        }
+
+        assertTrue(false);
+    }
+
+    public void testModifyOperation() throws Throwable {
+        final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
+
+        thrownExceptionFlag.Thrown = true;
+
+        final JsonObject serverItem = new JsonObject();
+        serverItem.addProperty("id", "abc");
+        serverItem.addProperty("String", "fooo");
+
+        Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
+            public Void apply(ServiceFilterRequest request) {
+                try {
+                    if (thrownExceptionFlag.Thrown) {
+                        throw new MobileServiceExceptionBase(new MobileServiceException(new Exception()), serverItem);
+                    }
+                } catch (Exception e) {
+                    serviceFilterContainer.Exception = e;
+                }
+
+                return null;
+            }
+        };
+
+        client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+
+        MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
+
+        StringIdType item = new StringIdType();
+
+        item.Id = "abc";
+        item.String = "what?";
+
+        table.insert(item).get();
+        assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+        try {
+            client.getSyncContext().push().get();
+        } catch (Exception ex) {
+            MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
+
+            assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
+            assertEquals(mspfe.getPushCompletionResult().getOperationErrors().size(), 1);
+            assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+            TableOperationError tableOperationError = mspfe.getPushCompletionResult().getOperationErrors().get(0);
+
+            JsonElement operations = store.read(QueryOperations.tableName("__operations"));
+            JsonObject op = operations.getAsJsonArray().get(0).getAsJsonObject();
+            assertEquals(TableOperationKind.Insert, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Failed, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            tableOperationError.modifyOperationType(TableOperationKind.Delete);
+
+            operations = store.read(QueryOperations.tableName("__operations"));
+            op = operations.getAsJsonArray().get(0).getAsJsonObject();
+            assertEquals(TableOperationKind.Delete, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Pending, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            // modify operation defaults to client item, delete backs up item in operation
+            JsonObject opItem = op.get("item").getAsJsonObject();
+            assertEquals(item.Id, opItem.get("Id").getAsString());
+            assertEquals(item.String, opItem.get("String").getAsString());
+
+            StringIdType result = table.lookUp(item.Id).get();
+            assertNull(result);
+
+            return;
+        }
+
+        assertTrue(false);
+    }
+
+    public void testModifyOperationUpdateItem() throws Throwable {
+        final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
+
+        thrownExceptionFlag.Thrown = true;
+
+        final JsonObject serverItem = new JsonObject();
+        serverItem.addProperty("id", "abc");
+        serverItem.addProperty("String", "fooo");
+
+        Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
+            public Void apply(ServiceFilterRequest request) {
+                try {
+                    if (thrownExceptionFlag.Thrown) {
+                        throw new MobileServiceExceptionBase(new MobileServiceException(new Exception()), serverItem);
+                    }
+                } catch (Exception e) {
+                    serviceFilterContainer.Exception = e;
+                }
+
+                return null;
+            }
+        };
+
+        client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+
+        MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
+
+        StringIdType item = new StringIdType();
+
+        item.Id = "abc";
+        item.String = "what?";
+
+        table.insert(item).get();
+        assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+        try {
+            client.getSyncContext().push().get();
+        } catch (Exception ex) {
+            MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
+
+            assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
+            assertEquals(mspfe.getPushCompletionResult().getOperationErrors().size(), 1);
+            assertEquals(client.getSyncContext().getPendingOperations(), 1);
+
+            TableOperationError tableOperationError = mspfe.getPushCompletionResult().getOperationErrors().get(0);
+
+            JsonElement operations = store.read(QueryOperations.tableName("__operations"));
+            JsonObject op = operations.getAsJsonArray().get(0).getAsJsonObject();
+            assertEquals(TableOperationKind.Insert, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Failed, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            tableOperationError.modifyOperationTypeAndUpdateItem(TableOperationKind.Update, tableOperationError.getServerItem());
+
+            operations = store.read(QueryOperations.tableName("__operations"));
+            op = operations.getAsJsonArray().get(0).getAsJsonObject();
+            assertEquals(TableOperationKind.Update, TableOperationKind.parse(op.get("kind").getAsInt()));
+            assertEquals(MobileServiceTableOperationState.Pending, MobileServiceTableOperationState.parse(op.get("state").getAsInt()));
+
+            assertTrue(op.get("item").isJsonNull());
+
+            StringIdType result = table.lookUp(item.Id).get();
+            assertEquals(serverItem.get("Id").getAsString(), result.Id);
+            assertEquals(serverItem.get("String").getAsString(), result.String);
+
+            return;
+        }
+
+        assertTrue(false);
+    }
+
+    public void testPushAbortOnNewtorkError() throws Throwable {
+        final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
+
+        thrownExceptionFlag.Thrown = true;
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -952,8 +980,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -966,8 +992,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
 
@@ -989,13 +1014,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testPushAbortOnAuthentication() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus(new StatusLine(Protocol.HTTP_2, 401, ""));
@@ -1018,8 +1039,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1032,8 +1051,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
 
@@ -1055,13 +1073,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testPushAbortOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -1079,8 +1093,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1093,8 +1105,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             MobileServicePushFailedException mspfe = (MobileServicePushFailedException) ex.getCause();
 
             assertEquals(mspfe.getPushCompletionResult().getStatus(), MobileServicePushStatus.InternalError);
@@ -1114,17 +1125,12 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         assertTrue(false);
     }
 
-
     //Test Collapse Login on Operation Error
 
     public void testInsertThrowsWhenInsertIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -1144,8 +1150,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1158,12 +1162,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.PostMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: An insert operation on the item is already in the queue.");
@@ -1176,13 +1178,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testInsertThrowsWhenInsertIsInQueueOnAuthenticationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus(new StatusLine(Protocol.HTTP_2, 401, ""));
@@ -1205,8 +1203,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1219,12 +1215,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.PostMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: An insert operation on the item is already in the queue.");
@@ -1237,13 +1231,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testInsertThrowsWhenInsertIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -1261,8 +1251,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1275,12 +1263,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.PostMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: An insert operation on the item is already in the queue.");
@@ -1293,14 +1279,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteNoCollapseInsertWhenFailedInsertIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         String expectedUrl = "http://myapp.com/tables/stringidtype/abc";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -1320,8 +1302,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1334,8 +1314,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             table.delete(item).get();
 
             assertEquals(client.getSyncContext().getPendingOperations(), 1);
@@ -1356,14 +1335,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteNoCollapseInsertWhenFailedInsertIsInQueueOnAuthentication() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         String expectedUrl = "http://myapp.com/tables/stringidtype/abc";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus(new StatusLine(Protocol.HTTP_2, 401, ""));
@@ -1386,8 +1361,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1400,8 +1373,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             table.delete(item).get();
 
             assertEquals(client.getSyncContext().getPendingOperations(), 1);
@@ -1422,14 +1394,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteNoCollapseInsertWhenFailedInsertIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         String expectedUrl = "http://myapp.com/tables/stringidtype/abc";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -1447,8 +1415,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1461,8 +1427,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             table.delete(item).get();
 
             assertEquals(client.getSyncContext().getPendingOperations(), 1);
@@ -1483,14 +1448,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateCollapseWhenInsertIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         final String expectedUpdateContent = "{\"String\":\"fooo\",\"id\":\"abc\"}";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -1510,8 +1471,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1524,8 +1483,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             StringIdType itemUpdated = new StringIdType();
 
@@ -1550,14 +1508,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateCollapseWhenInsertIsInQueueOnAuthenticationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         final String expectedUpdateContent = "{\"String\":\"fooo\",\"id\":\"abc\"}";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus(new StatusLine(Protocol.HTTP_2, 401, ""));
@@ -1580,8 +1534,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1594,8 +1546,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             StringIdType itemUpdated = new StringIdType();
 
@@ -1620,14 +1571,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateCollapseWhenInsertIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         final String expectedUpdateContent = "{\"String\":\"fooo\",\"id\":\"abc\"}";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -1647,8 +1594,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1661,8 +1606,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             StringIdType itemUpdated = new StringIdType();
 
@@ -1687,14 +1631,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateCollapseWhenUpdateIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         final String expectedUpdateContent = "{\"String\":\"fooo\",\"id\":\"abc\"}";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -1714,8 +1654,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1728,8 +1666,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             StringIdType itemUpdated = new StringIdType();
 
@@ -1754,14 +1691,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateCollapseWhenUpdateIsInQueueOnAuthentication() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         final String expectedUpdateContent = "{\"String\":\"fooo\",\"id\":\"abc\"}";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus(new StatusLine(Protocol.HTTP_2, 401, ""));
@@ -1784,8 +1717,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1798,8 +1729,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             StringIdType itemUpdated = new StringIdType();
 
@@ -1824,14 +1754,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateCollapseWhenUpdateIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         final String expectedUpdateContent = "{\"String\":\"fooo\",\"id\":\"abc\"}";
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -1849,8 +1775,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1863,8 +1787,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             StringIdType itemUpdated = new StringIdType();
 
@@ -1889,13 +1812,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteCollapseUpdateWhenUpdateIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -1915,8 +1834,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1929,8 +1846,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             table.delete(item).get();
 
@@ -1949,13 +1865,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteCollapseUpdateWhenUpdateIsInQueueOnAuthenticationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus((new StatusLine(Protocol.HTTP_2, 401, "")));
@@ -1978,8 +1890,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -1992,8 +1902,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             table.delete(item).get();
 
@@ -2012,13 +1921,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteCollapseUpdateWhenUpdateIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -2036,8 +1941,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2050,8 +1953,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
 
             table.delete(item).get();
 
@@ -2070,13 +1972,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testInsertThrowsWhenUpdateIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -2096,8 +1994,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2110,12 +2006,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.PatchMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: An update operation on the item is already in the queue.");
@@ -2128,13 +2022,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testInsertThrowsWhenUpdateIsInQueueOnAuthenticationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus(new StatusLine(Protocol.HTTP_2, 401, ""));
@@ -2157,8 +2047,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2171,12 +2059,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.PatchMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: An update operation on the item is already in the queue.");
@@ -2189,13 +2075,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testInsertThrowsWhenUpdateIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -2213,8 +2095,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2227,12 +2107,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.PatchMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: An update operation on the item is already in the queue.");
@@ -2245,13 +2123,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteThrowsWhenDeleteIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -2271,8 +2145,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2285,12 +2157,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.delete(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2303,13 +2173,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteThrowsWhenDeleteIsInQueueOnAuthenticationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus(new StatusLine(Protocol.HTTP_2, 401, ""));
@@ -2332,8 +2198,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2346,12 +2210,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.delete(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2364,13 +2226,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testDeleteThrowsWhenDeleteIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -2388,8 +2246,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2402,12 +2258,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.delete(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2420,13 +2274,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testInsertThrowsWhenDeleteIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -2446,8 +2296,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2460,12 +2308,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2478,13 +2324,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testInsertThrowsWhenDeleteIsInQueueOnAuthenticationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus((new StatusLine(Protocol.HTTP_2, 401, "")));
@@ -2507,8 +2349,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2521,12 +2361,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2539,13 +2377,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testInsertThrowsWhenDeleteIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -2563,8 +2397,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2577,12 +2409,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.insert(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2595,13 +2425,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateThrowsWhenDeleteIsInQueueOnNewtorkError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         final MobileServiceException innerException = new MobileServiceException(new IOException());
 
@@ -2621,8 +2447,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2635,12 +2459,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.update(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2653,13 +2475,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateThrowsWhenDeleteIsInQueueOnAuthenticationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         ServiceFilterResponseMock response = new ServiceFilterResponseMock();
         response.setStatus((new StatusLine(Protocol.HTTP_2, 401, "")));
@@ -2682,8 +2500,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2696,12 +2512,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.update(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2714,13 +2528,9 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public void testUpdateThrowsWhenDeleteIsInQueueOnOperationError() throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -2738,8 +2548,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
 
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
-
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
         StringIdType item = new StringIdType();
@@ -2752,12 +2560,10 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         try {
             client.getSyncContext().push().get();
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             try {
                 table.update(item).get();
-            }
-            catch(Exception ex2) {
+            } catch (Exception ex2) {
                 assertEquals(client.getSyncContext().getPendingOperations(), 1);
                 assertEquals(serviceFilterContainer.Requests.get(0).Method, HttpConstants.DeleteMethod);
                 assertEquals(ex2.getMessage(), "java.lang.IllegalStateException: A delete operation on the item is already in the queue.");
@@ -2768,7 +2574,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         assertTrue(false);
     }
-
 
     //Test collapse login
 
@@ -3060,11 +2865,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
                                     CustomFunctionTwoParameters<MobileServiceSyncTable<StringIdType>, StringIdType, Void> secondOperationOnItem1,
                                     final CustomFunctionTwoParameters<ServiceFilterRequest, Integer, Void> assertRequest) throws Throwable {
 
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
                 try {
@@ -3078,8 +2878,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         };
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         StringIdType item1 = new StringIdType();
 
@@ -3112,13 +2910,8 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
     private void TestCollapseThrow(CustomFunctionTwoParameters<MobileServiceSyncTable<StringIdType>, StringIdType, Void> firstOperation,
                                    CustomFunctionTwoParameters<MobileServiceSyncTable<StringIdType>, StringIdType, Void> secondOperation) throws Throwable {
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         client = client.withFilter(getTestFilter());
-
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         StringIdType item = new StringIdType();
 
@@ -3148,11 +2941,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
 
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
         thrownExceptionFlag.Thrown = false;
-
-        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
-        final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
-
-        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
         Function<ServiceFilterRequest, Void> onHandleRequest = new Function<ServiceFilterRequest, Void>() {
             public Void apply(ServiceFilterRequest request) {
@@ -3232,7 +3020,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         return getTestFilter(serviceFilterContainer, 200, null, getLastContentAsDefault, content);
     }
 
-
     // Test Filter
     private ServiceFilter getTestFilter(ServiceFilterContainer serviceFilterContainer, int statusCode, String... content) {
         return getTestFilter(serviceFilterContainer, statusCode, null, true, content);
@@ -3241,7 +3028,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     // Test Filter
     private ServiceFilter getTestFilter(final ServiceFilterContainer serviceFilterContainer, final int statusCode,
                                         final Function<ServiceFilterRequest, Void> onHandleRequest, final boolean getLastContentAsDefault, final String... contents) {
-
         return new ServiceFilter() {
 
             @Override
@@ -3258,8 +3044,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
                 } else {
                     if (getLastContentAsDefault) {
                         content = contents[contents.length - 1];
-                    }
-                    else {
+                    } else {
                         content = "[]";
                     }
                 }

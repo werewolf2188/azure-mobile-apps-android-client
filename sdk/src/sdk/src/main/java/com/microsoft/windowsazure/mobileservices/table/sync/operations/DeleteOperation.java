@@ -23,51 +23,35 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.table.sync.operations;
 
+import com.google.gson.JsonObject;
+
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * Class representing a delete operation against remote table.
  */
-public class DeleteOperation implements TableOperation {
-    private String mId;
-    private String mTableName;
-    private String mItemId;
-    private Date mCreatedAt;
-    private MobileServiceTableOperationState operationState;
+public class DeleteOperation extends AbstractTableOperation {
 
     /**
      * Constructor for DeleteOperation
      *
      * @param tableName the table name
-     * @param itemId    the item id
-     */
+    * @param itemId    the item id
+    */
     public DeleteOperation(String tableName, String itemId) {
-        this.mId = UUID.randomUUID().toString();
-        this.mTableName = tableName;
-        this.mItemId = itemId;
-        this.mCreatedAt = new Date();
+        super(tableName, itemId);
     }
 
     /**
-     * Create a new DeleteOperation
+     * Constructor for Delete Operation
      *
-     * @param id        the table operation id
-     * @param tableName the table name
-     * @param itemId    the item id
-     * @param createdAt the creation date of the table operation
-     * @return the DeleteOperation
+     * @param id
+     * @param tableName
+     * @param itemId
+     * @param createdAt
      */
-    public static DeleteOperation create(String id, String tableName, String itemId, Date createdAt) {
-        DeleteOperation operation = new DeleteOperation(tableName, itemId);
-        operation.mId = id;
-        operation.mCreatedAt = createdAt;
-        return operation;
-    }
-
-    @Override
-    public String getId() {
-        return this.mId;
+    public DeleteOperation(String id, String tableName, String itemId, Date createdAt, MobileServiceTableOperationState state, JsonObject item) {
+        super(id, tableName, itemId, createdAt, state, item);
     }
 
     @Override
@@ -76,42 +60,7 @@ public class DeleteOperation implements TableOperation {
     }
 
     @Override
-    public String getTableName() {
-        return this.mTableName;
-    }
-
-    @Override
-    public String getItemId() {
-        return this.mItemId;
-    }
-
-    @Override
-    public Date getCreatedAt() {
-        return this.mCreatedAt;
-    }
-
-    @Override
     public <T> T accept(TableOperationVisitor<T> visitor) throws Throwable {
         return visitor.visit(this);
-    }
-
-    /**
-     * Gets the operation state
-     *
-     * @return The operation state
-     */
-    @Override
-    public MobileServiceTableOperationState getOperationState() {
-        return operationState;
-    }
-
-    /**
-     * Sets the operation state
-     *
-     * @param operationState the Operation State
-     */
-    @Override
-    public void setOperationState(MobileServiceTableOperationState operationState) {
-        this.operationState = operationState;
     }
 }

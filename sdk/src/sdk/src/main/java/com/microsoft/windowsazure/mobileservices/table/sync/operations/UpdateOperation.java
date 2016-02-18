@@ -23,18 +23,14 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.table.sync.operations;
 
+import com.google.gson.JsonObject;
+
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * Class representing an update operation against remote table.
  */
-public class UpdateOperation implements TableOperation {
-    private String mId;
-    private String mTableName;
-    private String mItemId;
-    private Date mCreatedAt;
-    private MobileServiceTableOperationState operationState;
+public class UpdateOperation extends AbstractTableOperation {
 
     /**
      * Constructor for UpdateOperation
@@ -43,31 +39,19 @@ public class UpdateOperation implements TableOperation {
      * @param itemId    the item id
      */
     public UpdateOperation(String tableName, String itemId) {
-        this.mId = UUID.randomUUID().toString();
-        this.mTableName = tableName;
-        this.mItemId = itemId;
-        this.mCreatedAt = new Date();
+        super(tableName, itemId);
     }
 
     /**
-     * Create a new UpdateOperation
+     * Constructor for Update Operation
      *
-     * @param id        the table operation id
-     * @param tableName the table name
-     * @param itemId    the item id
-     * @param createdAt the creation date of the table operation
-     * @return the UpdateOperation
+     * @param id
+     * @param tableName
+     * @param itemId
+     * @param createdAt
      */
-    public static UpdateOperation create(String id, String tableName, String itemId, Date createdAt) {
-        UpdateOperation operation = new UpdateOperation(tableName, itemId);
-        operation.mId = id;
-        operation.mCreatedAt = createdAt;
-        return operation;
-    }
-
-    @Override
-    public String getId() {
-        return this.mId;
+    public UpdateOperation(String id, String tableName, String itemId, Date createdAt, MobileServiceTableOperationState state) {
+        super(id, tableName, itemId, createdAt, state, null);
     }
 
     @Override
@@ -76,42 +60,7 @@ public class UpdateOperation implements TableOperation {
     }
 
     @Override
-    public String getTableName() {
-        return this.mTableName;
-    }
-
-    @Override
-    public String getItemId() {
-        return this.mItemId;
-    }
-
-    @Override
-    public Date getCreatedAt() {
-        return this.mCreatedAt;
-    }
-
-    @Override
     public <T> T accept(TableOperationVisitor<T> visitor) throws Throwable {
         return visitor.visit(this);
-    }
-
-    /**
-     * Gets the operation state
-     *
-     * @return The operation state
-     */
-    @Override
-    public MobileServiceTableOperationState getOperationState() {
-        return operationState;
-    }
-
-    /**
-     * Sets the operation state
-     *
-     * @param operationState the Operation State
-     */
-    @Override
-    public void setOperationState(MobileServiceTableOperationState operationState) {
-        this.operationState = operationState;
     }
 }

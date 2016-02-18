@@ -43,7 +43,6 @@ public class RemoteTableOperationProcessor implements TableOperationVisitor<Json
      * Constructor for RemoteTableOperationProcessor
      *
      * @param client the mobile service client
-     * @param item   the item to process
      */
     public RemoteTableOperationProcessor(MobileServiceClient client, JsonObject item) {
         this.mClient = client;
@@ -116,20 +115,6 @@ public class RemoteTableOperationProcessor implements TableOperationVisitor<Json
     }
 
     /**
-     * Gets the item to process
-     */
-    public JsonObject getItem() {
-        return this.mItem;
-    }
-
-    /**
-     * Sets the item to process
-     */
-    public void setItem(JsonObject item) {
-        this.mItem = item;
-    }
-
-    /**
      * Returns an instance of a remote table to be used by this processor
      *
      * @param tableName the name of the remote table
@@ -139,5 +124,13 @@ public class RemoteTableOperationProcessor implements TableOperationVisitor<Json
         MobileServiceJsonTable table = this.mClient.getTable(tableName);
         table.addFeature(MobileServiceFeatures.Offline);
         return table;
+    }
+
+    public JsonObject getItem() {
+        return this.mItem;
+    }
+
+    public void setItem(JsonObject item) {
+        this.mItem = item;
     }
 }

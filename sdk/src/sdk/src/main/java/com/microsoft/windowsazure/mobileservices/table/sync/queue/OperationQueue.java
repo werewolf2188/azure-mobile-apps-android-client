@@ -99,6 +99,7 @@ public class OperationQueue {
         columns.put("__queueloadedat", ColumnDataType.Date);
         columns.put("sequence", ColumnDataType.Real);
         columns.put("state", ColumnDataType.Real);
+        columns.put("item", ColumnDataType.Other);
 
         store.defineTable(OPERATION_QUEUE_TABLE, columns);
     }
@@ -123,22 +124,23 @@ public class OperationQueue {
             for (JsonElement element : array) {
                 if (element.isJsonObject()) {
                     OperationQueueItem opQueueItem = deserialize((JsonObject) element);
+                    TableOperation operation = opQueueItem.getOperation();
                     opQueue.mQueue.add(opQueueItem);
 
                     // '/' is a reserved character that cannot be used on string
                     // ids.
                     // We use it to build a unique compound string from
                     // tableName and itemId
-                    String tableItemId = opQueueItem.getTableName() + "/" + opQueueItem.getItemId();
+                    String tableItemId = operation.getTableName() + "/" + operation.getItemId();
 
                     opQueue.mIdOperationMap.put(tableItemId, opQueueItem);
 
-                    Integer tableCount = opQueue.mTableCountMap.get(opQueueItem.getTableName());
+                    Integer tableCount = opQueue.mTableCountMap.get(operation.getTableName());
 
                     if (tableCount != null) {
-                        opQueue.mTableCountMap.put(opQueueItem.getTableName(), tableCount + 1);
+                        opQueue.mTableCountMap.put(operation.getTableName(), tableCount + 1);
                     } else {
-                        opQueue.mTableCountMap.put(opQueueItem.getTableName(), 1);
+                        opQueue.mTableCountMap.put(operation.getTableName(), 1);
                     }
                 }
             }
@@ -149,43 +151,48 @@ public class OperationQueue {
 
     private static JsonObject serialize(OperationQueueItem opQueueItem) throws ParseException {
         JsonObject element = new JsonObject();
-
+        TableOperation operation = opQueueItem.getOperation();
         element.addProperty("id", opQueueItem.getId());
-        element.addProperty("kind", opQueueItem.getKind().getValue());
-        element.addProperty("tablename", opQueueItem.getTableName());
-        element.addProperty("itemid", opQueueItem.getItemId());
-        element.addProperty(MobileServiceSystemColumns.CreatedAt, DateSerializer.serialize(opQueueItem.getCreatedAt()));
+        element.addProperty("kind", operation.getKind().getValue());
+        element.addProperty("tablename", operation.getTableName());
+        element.addProperty("itemid", operation.getItemId());
+        element.addProperty(MobileServiceSystemColumns.CreatedAt, DateSerializer.serialize(operation.getCreatedAt()));
         element.addProperty("__queueloadedat", DateSerializer.serialize(opQueueItem.getQueueLoadedAt()));
         element.addProperty("sequence", opQueueItem.getSequence());
-        element.addProperty("state", opQueueItem.getOperationState().getValue());
+        element.addProperty("state", operation.getOperationState().getValue());
+        element.add("item", operation.getItem());
 
         return element;
     }
 
+    private static TableOperation createOperation(TableOperationKind type, String id, String table, String itemId, Date createdAt, MobileServiceTableOperationState state, JsonObject item) {
+        TableOperation operation = null;
+        switch (type) {
+            case Insert:
+                operation = new InsertOperation(id, table, itemId, createdAt, state);
+                break;
+            case Update:
+                operation = new UpdateOperation(id, table, itemId, createdAt, state);
+                break;
+            case Delete:
+                operation = new DeleteOperation(id, table, itemId, createdAt, state, item);
+                break;
+        }
+        return operation;
+    }
+
     private static OperationQueueItem deserialize(JsonObject element) throws ParseException {
         String id = element.get("id").getAsString();
-        int kind = element.get("kind").getAsInt();
+        TableOperationKind kind = TableOperationKind.parse(element.get("kind").getAsInt());
         String tableName = element.get("tablename").getAsString();
         String itemId = element.get("itemid").getAsString();
         Date createdAt = DateSerializer.deserialize(element.get(MobileServiceSystemColumns.CreatedAt).getAsString());
         Date queueLoadedAt = DateSerializer.deserialize(element.get("__queueloadedat").getAsString());
         long sequence = element.get("sequence").getAsLong();
-        int state = element.get("state").getAsInt();
+        MobileServiceTableOperationState state = MobileServiceTableOperationState.parse(element.get("state").getAsInt());
+        JsonObject item = (element.get("item").isJsonNull()) ? null : element.get("item").getAsJsonObject();
 
-        TableOperation operation = null;
-        switch (kind) {
-            case 0:
-                operation = InsertOperation.create(id, tableName, itemId, createdAt);
-                break;
-            case 1:
-                operation = UpdateOperation.create(id, tableName, itemId, createdAt);
-                break;
-            case 2:
-                operation = DeleteOperation.create(id, tableName, itemId, createdAt);
-                break;
-        }
-
-        operation.setOperationState(MobileServiceTableOperationState.parse(state));
+        TableOperation operation = createOperation(kind, id, tableName, itemId, createdAt, state, item);
 
         return new OperationQueueItem(operation, queueLoadedAt, sequence);
     }
@@ -256,6 +263,26 @@ public class OperationQueue {
             }
 
             return result;
+        } finally {
+            this.mSyncLock.writeLock().unlock();
+        }
+    }
+
+    public void updateOperationAndItem(TableOperationError error, TableOperationKind kind, JsonObject item) throws Throwable {
+        String tableItemId = error.getTableName() + '/' + error.getItemId();
+
+        this.mSyncLock.writeLock().lock();
+
+        try {
+            if (this.mIdOperationMap.containsKey(tableItemId)) {
+                OperationQueueItem itemToUpdate = this.mIdOperationMap.get(tableItemId);
+                TableOperation operation = itemToUpdate.getOperation();
+                TableOperation newOperation = createOperation(kind, operation.getId(), operation.getTableName(), operation.getItemId(), operation.getCreatedAt(), MobileServiceTableOperationState.Pending, item);
+                itemToUpdate.setOperation(newOperation);
+                this.mStore.upsert(OPERATION_QUEUE_TABLE, serialize(itemToUpdate), false);
+            } else {
+                throw new IllegalStateException("The operation to update could not be found");
+            }
         } finally {
             this.mSyncLock.writeLock().unlock();
         }
@@ -409,19 +436,17 @@ public class OperationQueue {
     }
 
     private void removeOperationQueueItem(OperationQueueItem opQueueItem) throws MobileServiceLocalStoreException {
-        // '/' is a reserved character that cannot be used on string ids.
-        // We use it to build a unique compound string from tableName and
-        // itemId
-        String tableItemId = opQueueItem.getTableName() + "/" + opQueueItem.getItemId();
+        TableOperation operation = opQueueItem.getOperation();
+        String tableItemId = operation.getTableItemId();
 
         this.mIdOperationMap.remove(tableItemId);
 
-        Integer tableCount = this.mTableCountMap.get(opQueueItem.getTableName());
+        Integer tableCount = this.mTableCountMap.get(operation.getTableName());
 
         if (tableCount != null && tableCount > 1) {
-            this.mTableCountMap.put(opQueueItem.getTableName(), tableCount - 1);
+            this.mTableCountMap.put(operation.getTableName(), tableCount - 1);
         } else {
-            this.mTableCountMap.remove(opQueueItem.getTableName());
+            this.mTableCountMap.remove(operation.getTableName());
         }
 
         this.mStore.delete(OPERATION_QUEUE_TABLE, opQueueItem.getId());
@@ -502,7 +527,7 @@ public class OperationQueue {
                 bookmarkQueueItem.mQueueLoadedAt) && opQueueItem.getSequence() < bookmarkQueueItem.mSequence));
     }
 
-    private static class OperationQueueItem implements TableOperation {
+    private static class OperationQueueItem {
         private TableOperation mOperation;
         private Date mQueueLoadedAt;
         private long mSequence;
@@ -515,33 +540,16 @@ public class OperationQueue {
             this.mCancelled = false;
         }
 
-        @Override
         public String getId() {
             return this.mOperation.getId();
         }
 
-        @Override
-        public TableOperationKind getKind() {
-            return this.mOperation.getKind();
-        }
-
-        @Override
-        public String getTableName() {
-            return this.mOperation.getTableName();
-        }
-
-        @Override
-        public String getItemId() {
-            return this.mOperation.getItemId();
-        }
-
-        @Override
-        public Date getCreatedAt() {
-            return this.mOperation.getCreatedAt();
-        }
-
         private TableOperation getOperation() {
             return this.mOperation;
+        }
+
+        private void setOperation(TableOperation operation) {
+            this.mOperation = operation;
         }
 
         private Date getQueueLoadedAt() {
@@ -558,31 +566,6 @@ public class OperationQueue {
 
         private void cancel() {
             this.mCancelled = true;
-        }
-
-        @Override
-        public <T> T accept(TableOperationVisitor<T> visitor) throws Throwable {
-            return this.mOperation.accept(visitor);
-        }
-
-        /**
-         * Gets the operation state
-         *
-         * @return The operation state
-         */
-        @Override
-        public MobileServiceTableOperationState getOperationState() {
-            return this.mOperation.getOperationState();
-        }
-
-        /**
-         * Sets the operation state
-         *
-         * @param state the Operation State
-         */
-        @Override
-        public void setOperationState(MobileServiceTableOperationState state) {
-            this.mOperation.setOperationState(state);
         }
     }
 
