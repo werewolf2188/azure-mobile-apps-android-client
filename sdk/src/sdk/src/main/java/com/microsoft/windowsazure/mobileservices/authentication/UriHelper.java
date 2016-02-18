@@ -71,7 +71,7 @@ class UriHelper {
     */
     public static URL createHostOnlyUrl(URL appUrl) {
         try {
-            appUrl = new URL(appUrl.getProtocol(), appUrl.getHost(), "/");
+            appUrl = new URL(appUrl.getProtocol(), appUrl.getHost(), appUrl.getPort(), "/");
         } catch (MalformedURLException mex) {
         }
         return appUrl;
