@@ -57,7 +57,7 @@ public class CustomApiClientTests extends InstrumentationTestCase {
     String appUrl = "";
 
     protected void setUp() throws Exception {
-        appUrl = "http://myapp.com/";
+        appUrl = "http://myapp.com:3333/";
         super.setUp();
     }
 
