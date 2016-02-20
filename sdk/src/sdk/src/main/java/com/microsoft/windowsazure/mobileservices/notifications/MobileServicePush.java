@@ -128,6 +128,43 @@ public class MobileServicePush {
     }
 
     /**
+     * Registers the client for template notifications
+     *
+     * @param pnsHandle    PNS specific identifier
+     * @param templates     temp
+     * @return Future with TemplateRegistration Information
+     */
+    public ListenableFuture<Void> register(String pnsHandle, JsonObject templates) {
+
+        final SettableFuture<Void> resultFuture = SettableFuture.create();
+
+        if (isNullOrWhiteSpace(pnsHandle)) {
+            resultFuture.setException(new IllegalArgumentException("pnsHandle"));
+            return resultFuture;
+        }
+
+        if (templates == null) {
+            resultFuture.setException(new IllegalArgumentException("templates"));
+            return resultFuture;
+        }
+
+        ListenableFuture<Void> registerInternalFuture = createOrUpdateInstallation(pnsHandle, templates);
+
+        Futures.addCallback(registerInternalFuture, new FutureCallback<Void>() {
+            @Override
+            public void onFailure(Throwable exception) {
+                resultFuture.setException(exception);
+            }
+
+            @Override
+            public void onSuccess(Void v) {
+                resultFuture.set(v);
+            }
+        });
+
+        return resultFuture;
+    }
+    /**
      * Registers the client for native notifications
      *
      * @param pnsHandle PNS specific identifier
