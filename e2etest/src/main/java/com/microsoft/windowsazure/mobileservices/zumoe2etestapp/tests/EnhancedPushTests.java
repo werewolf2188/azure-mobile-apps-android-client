@@ -70,19 +70,17 @@ public class EnhancedPushTests extends TestGroup {
         // Notification Roundtrip Tests
         this.addTest(createGCMRegisterTest());
 
-        String json = "'Notification Hub test notification'".replace('\'', '\"');
 
-        json = "'Notification Hub test notification'".replace('\'', '\"');
-        this.addTest(createNativePushTest("Native Notification Roundtrip - Simple payload", json));
-
-        json = "{'name':'John Doe','age':'33'}".replace('\'', '\"');
-        this.addTest(createNativePushTest("Native Notification Roundtrip - Complex payload", json));
-
+        String simpleJson = "'Notification Hub test notification'".replace('\'', '\"');
+        String complexJson = "{'name':'John Doe','age':'33'}".replace('\'', '\"');
         String templateNotification = "{'fullName':'John Doe'}".replace('\'', '\"');
         String template = "{'data':{'user':'$(fullName)'}}".replace('\'', '\"');
         String expectedPayload = "{'user':'John Doe'}".replace('\'', '\"');
 
+        this.addTest(createNativePushTest("Native Notification Roundtrip - Simple payload", simpleJson));
+        this.addTest(createNativePushTest("Native Notification Roundtrip - Complex payload", complexJson));
         this.addTest(createTemplatePushTest("Template Notification Roundtrip", templateNotification, "templateGCM", template, expectedPayload));
+        this.addTest(createTemplateRegistrationUsingJsonObjectTest("Template Registration using JsonObject"));
 
         this.addTest(createUnregisterTestCase("Unregister"));
 
@@ -293,6 +291,77 @@ public class EnhancedPushTests extends TestGroup {
                             template, templateNotification, callback);
                     GCMMessageManager.instance.waitForPushMessage(60000,
                             GCMMessageHelper.getPushCallback(this, expectedPayload, nativeUnregisterTestExecutionCallback));
+
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
+                    return;
+                }
+            }
+        };
+
+        test.setName(testName);
+
+        return test;
+    }
+
+    private TestCase createTemplateRegistrationUsingJsonObjectTest(String testName) {
+
+        TestCase test = new TestCase(testName) {
+
+            @Override
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+
+                try {
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+
+                    final MobileServicePush MobileServicePush = client.getPush();
+
+                    unregisterAll(this, MobileServicePush, client, registrationId);
+
+                    JsonElement unregisterResult = verifyUnregisterInstallationResult(client).get();
+
+                    if (!unregisterResult.getAsBoolean()) {
+                        this.log("Unregister failed");
+                        result.setStatus(TestStatus.Failed);
+
+                        callback.onTestComplete(this, result);
+                        return;
+                    }
+
+                    // Create Template JObject
+                    String templateName = "GcmTemplate2";
+
+                    JsonObject userJson = new JsonObject();
+                    userJson.addProperty("user2", "$(fullName2)");
+
+                    JsonObject dataJson = new JsonObject();
+                    dataJson.add("data", userJson);
+
+                    JsonObject bodyJson = new JsonObject();
+                    bodyJson.addProperty("body", dataJson.toString());
+
+                    JsonObject templateJson = new JsonObject();
+                    templateJson.add(templateName, bodyJson);
+
+                    final MobileServicePush mobileServicePush = client.getPush();
+
+                    mobileServicePush.register(registrationId, templateJson);
+
+                    JsonElement registerResult = verifyRegisterInstallationResult(client, registrationId, templateName, dataJson.toString()).get();
+
+                    if (!registerResult.getAsBoolean()) {
+                        this.log("Register failed");
+                        result.setStatus(TestStatus.Failed);
+
+                        callback.onTestComplete(this, result);
+                        return;
+                    } else {
+                        unregister(this, client.getPush());
+                        result.setStatus(TestStatus.Passed);
+                        callback.onTestComplete(this, result);
+                    }
 
                 } catch (Exception e) {
                     callback.onTestComplete(this, createResultFromException(e));
