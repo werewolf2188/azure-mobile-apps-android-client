@@ -58,9 +58,9 @@ public class StorageLogger {
 
             String blobName = UUID.randomUUID().toString() + ".txt";
 
-            test.setFileName(mPlatform + "/" + blobName);
+            test.setFileName(getFullName() + "/" + blobName);
 
-            String requestUrl = containerUrl + "/" + mPlatform + "/" + blobName + "?" + token;
+            String requestUrl = containerUrl + "/" + test.getFileName() + "?" + token;
 
             putBlob(requestUrl, test.getLog());
         }
@@ -97,6 +97,10 @@ public class StorageLogger {
         return (date.getTime() + 11644473600000L) * 10000L;
     }
 
+    private String getFullName() {
+        return mRuntime + "-" + mPlatform;
+    }
+
     public void reportResults(final int failedTestCount, final int passedTestCount, final int skippedTestCount,
                               final Date startTime, final Date endTime, final List<TestCase> tests,
                               final Map<String, String> sourceMap) throws IOException {
@@ -105,8 +109,8 @@ public class StorageLogger {
         uploadBlob(tests, mContainerUrl, mToken);
 
         //Post result for master test run
-        String masterResultBlobUrl = mContainerUrl + "/" + mPlatform + "-master.json?" + mToken;
-        String detailFileName = mPlatform + "-detail.json";
+        String masterResultBlobUrl = mContainerUrl + "/" + getFullName() + "-master.json?" + mToken;
+        String detailFileName = getFullName() + "-detail.json";
 
         JsonArray masterRunResult = createMasterRunResult(failedTestCount, passedTestCount, skippedTestCount, tests.size(), startTime, endTime, detailFileName);
         putBlob(masterResultBlobUrl, masterRunResult.toString());
@@ -122,7 +126,7 @@ public class StorageLogger {
     private JsonArray createMasterRunResult(int failedTestCount, int passedTestCount, int skippedTestCount,
                                             int totalTestCount, Date startTime, Date endTime, String fileName) {
         JsonObject test = new JsonObject();
-        test.addProperty("full_name", "Android");
+        test.addProperty("full_name", getFullName());
         test.addProperty("outcome", failedTestCount == 0 ? "Passed" : "Failed");
         test.addProperty("start_time", getFileTime(startTime));
         test.addProperty("end_time", getFileTime(endTime));
