@@ -210,16 +210,16 @@ public class EnhancedPushTests extends InstrumentationTestCase {
         final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
         final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" +
                 "{" +
-                    "\"template1\":" +
-                        "{\"body\":\"" +
-                            "{\\\"data\\\":\\\"abc\\\"}" +
-                        "\"}," +
-                    "\"template2\":" +
-                        "{\"body\":\"" +
-                            "{\\\"data\\\":\\\"abc\\\"}" +
-                        "\"}" +
-                "}"+
-        "}";
+                "\"template1\":" +
+                "{\"body\":\"" +
+                "{\\\"data\\\":\\\"abc\\\"}" +
+                "\"}," +
+                "\"template2\":" +
+                "{\"body\":\"" +
+                "{\\\"data\\\":\\\"abc\\\"}" +
+                "\"}" +
+                "}" +
+                "}";
 
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
@@ -242,7 +242,7 @@ public class EnhancedPushTests extends InstrumentationTestCase {
                 }
             });
 
-            JsonObject templates = createTemplateObject();
+            JsonObject templates = createTemplateObject(false);
 
             final MobileServicePush push = client.getPush();
 
@@ -264,20 +264,90 @@ public class EnhancedPushTests extends InstrumentationTestCase {
         Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
     }
 
-    private JsonObject createTemplateObject()
-    {
+    public void testRegisterTemplateAndTempateBodyAsJobject() throws Throwable {
+
+        final Container container = new Container();
+
+        MobileServiceClient client = null;
+        final String handle = "handle";
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" +
+                "{" +
+                "\"template1\":" +
+                "{\"body\":\"" +
+                "{\\\"data\\\":\\\"abc\\\"}" +
+                "\"}," +
+                "\"template2\":" +
+                "{\"body\":\"" +
+                "{\\\"data\\\":\\\"abc\\\"}" +
+                "\"}" +
+                "}" +
+                "}";
+
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+
+            client = client.withFilter(new ServiceFilter() {
+
+                @Override
+                public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+
+                    container.requestUrl = request.getUrl();
+                    container.requestContent = request.getContent();
+                    container.requestMethod = request.getMethod();
+
+                    ServiceFilterResponseMock mockResponse = new ServiceFilterResponseMock();
+                    mockResponse.setStatus(new StatusLine(Protocol.HTTP_2, 204, ""));
+
+                    ServiceFilterRequestMock mockRequest = new ServiceFilterRequestMock(mockResponse);
+
+                    return nextServiceFilterCallback.onNext(mockRequest);
+                }
+            });
+
+            JsonObject templates = createTemplateObject(true);
+
+            final MobileServicePush push = client.getPush();
+
+            push.register(handle, templates).get();
+
+        } catch (Exception exception) {
+            if (exception instanceof ExecutionException) {
+                container.exception = (Exception) exception.getCause();
+            } else {
+                container.exception = exception;
+            }
+
+            fail(container.exception.getMessage());
+        }
+
+        // Asserts
+        Assert.assertEquals(expectedUrl, container.requestUrl);
+        Assert.assertEquals(expectedContent, container.requestContent);
+        Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
+    }
+
+    private JsonObject createTemplateObject(Boolean isTemplateBodyString) {
         JsonObject templateBody = new JsonObject();
-        templateBody.addProperty("data","abc");
+        templateBody.addProperty("data", "abc");
 
         JsonObject templateDetailObject = new JsonObject();
-        templateDetailObject.addProperty("body", templateBody.toString());
+        if (isTemplateBodyString) {
+            templateDetailObject.addProperty("body", templateBody.toString());
+        } else {
+            templateDetailObject.add("body",templateBody);
+        }
 
         JsonObject templateObject = new JsonObject();
         templateObject.add("template1", templateDetailObject);
         templateObject.add("template2", templateDetailObject);
 
-        return   templateObject;
+        return templateObject;
     }
+
     private class Container {
 
         public String requestContent;
@@ -287,4 +357,3 @@ public class EnhancedPushTests extends InstrumentationTestCase {
         public Exception exception;
     }
 }
-
