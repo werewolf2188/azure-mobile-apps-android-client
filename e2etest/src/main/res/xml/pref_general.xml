@@ -30,7 +30,7 @@
 
     <EditTextPreference
         android:defaultValue="@string/pref_default_storage_runtime"
-        android:key="pref_storage_runtime_version"
+        android:key="pref_runtime_version"
         android:maxLines="1"
         android:singleLine="true"
         android:title="@string/pref_storage_runtime" />
