@@ -119,13 +119,13 @@ public class MainActivity extends Activity {
         if (extras != null) {
             mAutomationPreferences = new HashMap<String, String>();
             mAutomationPreferences.put("pref_run_unattended", extras.getString("pref_run_unattended", ""));
-            mAutomationPreferences.put("pref_mobile_service_url", extras.getString("pref_mobile_service_url", ""));
-            mAutomationPreferences.put("pref_google_userid", extras.getString("pref_google_userid", ""));
-            mAutomationPreferences.put("pref_google_webapp_clientid", extras.getString("pref_google_webapp_clientid", ""));
-            mAutomationPreferences.put("pref_storage_runtime_version", extras.getString("pref_storage_runtime_version", ""));
-            mAutomationPreferences.put("pref_storage_container_url", extras.getString("pref_storage_container_url", ""));
-            mAutomationPreferences.put("pref_storage_base64_token", extras.getString("pref_storage_base64_token", ""));
-            mAutomationPreferences.put("pref_GCM_sender_id", extras.getString("pref_GCM_sender_id", ""));
+            mAutomationPreferences.put(Constants.PREFERENCE_MOBILE_SERVICE_URL, extras.getString(Constants.PREFERENCE_MOBILE_SERVICE_URL, ""));
+            mAutomationPreferences.put(Constants.PREFERENCE_GOOGLE_USERID, extras.getString(Constants.PREFERENCE_GOOGLE_USERID, ""));
+            mAutomationPreferences.put(Constants.PREFERENCE_GOOGLE_WEBAPP_CLIENTID, extras.getString(Constants.PREFERENCE_GOOGLE_WEBAPP_CLIENTID, ""));
+            mAutomationPreferences.put(Constants.PREFERENCE_RUNTIME_VERSION, extras.getString(Constants.PREFERENCE_RUNTIME_VERSION, ""));
+            mAutomationPreferences.put(Constants.PREFERENCE_CONTAINER_URL, extras.getString(Constants.PREFERENCE_CONTAINER_URL, ""));
+            mAutomationPreferences.put(Constants.PREFERENCE_BASE64_TOKEN, extras.getString(Constants.PREFERENCE_BASE64_TOKEN, ""));
+            mAutomationPreferences.put(Constants.PREFERENCE_GCM_SENDER_ID, extras.getString(Constants.PREFERENCE_GCM_SENDER_ID, ""));
         }
 
         mTestCaseList = (ListView) findViewById(R.id.testCaseList);

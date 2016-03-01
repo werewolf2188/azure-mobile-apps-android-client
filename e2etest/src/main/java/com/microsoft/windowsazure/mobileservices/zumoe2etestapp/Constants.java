@@ -26,7 +26,7 @@ public class Constants {
 
     public static final String PREFERENCE_BASE64_TOKEN = "pref_storage_base64_token";
 
-    public static final String PREFERENCE_RUNTIME_VERSION = "pref_storage_runtime_version";
+    public static final String PREFERENCE_RUNTIME_VERSION = "pref_runtime_version";
 
     public static final String PREFERENCE_GOOGLE_USERID = "pref_google_userid";
 
