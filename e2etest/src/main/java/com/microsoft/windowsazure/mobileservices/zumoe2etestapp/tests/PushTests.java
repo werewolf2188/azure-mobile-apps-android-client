@@ -19,182 +19,496 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests;
 
-import com.google.android.gcm.GCMRegistrar;
+import android.util.Pair;
+
+import com.google.android.gms.gcm.GoogleCloudMessaging;
+import com.google.android.gms.iid.InstanceID;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
-import com.microsoft.windowsazure.mobileservices.table.MobileServiceJsonTable;
+import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceUser;
+import com.microsoft.windowsazure.mobileservices.http.HttpConstants;
+import com.microsoft.windowsazure.mobileservices.notifications.MobileServicePush;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.MainActivity;
+import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.PushMessageManager;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestCase;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestExecutionCallback;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestGroup;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestResult;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestStatus;
-import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.push.GCMMessageHelper;
-import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.push.GCMMessageManager;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class PushTests extends TestGroup {
 
-    private static final String tableName = "droidPushTest";
-
-    /*
-     * Pointer to the main activity used to register with GCM
-     */
     public static MainActivity mainActivity;
-
     public static String registrationId;
+    InstanceID iid;
+
 
     public PushTests() {
         super("Push tests");
 
-        this.addTest(createGCMRegisterTest());
-
-        String json = "{'name':'John Doe','age':'33'}".replace('\'', '\"');
-        this.addTest(createPushTest("Push - Simple data", json));
-        json = "{'ticker':'MSFT'}".replace('\'', '\"');
-        this.addTest(createPushTest("Push - Single value", json));
-        json = "{'non-ASCII':'Latin-ãéìôü ÇñÑ, arabic-لكتاب على الطاولة, chinese-这本书在桌子上'}";
-        this.addTest(createPushTest("Push - non-ASCII characters", json));
-        json = "\"A single string\"";
-        this.addTest(createPushTest("Push - Single string", json));
-
-        this.addTest(createNegativePushTest("(Neg) Invalid payload type (array)", "[{\"name\":\"John Doe\"}]"));
-        this.addTest(createNegativePushTest("(Neg) Invalid payload type (number)", "1234"));
-        this.addTest(createNegativePushTest("(Neg) Invalid payload value (number)", "{\"name\":1234}"));
-        this.addTest(createNegativePushTest("(Neg) Invalid payload value (object)", "{'name':{'first':'John','last':'Doe'}}".replace('\'', '\"')));
-
-        this.addTest(createGCMUnregisterTest());
+        this.addTest(createInitialDeleteRegistrationTest("Initial DeleteRegistration Test"));
+        this.addTest(createRegistrationTest("Registration Test"));
+        this.addTest(createLoginRegistrationTest("Login Registration Test"));
+        this.addTest(createUnregistrationTest("Unregistration Test"));
+        this.addTest(createPushTest("Push Test"));
+        this.addTest(createTemplateRegistrationAndPushTest("Template Test"));
     }
 
-    private TestCase createNegativePushTest(String testName, String jsonPayload) {
-        final JsonElement payload = new JsonParser().parse(jsonPayload);
-        return new TestCase(testName) {
+    private ListenableFuture<JsonElement> deleteRegistrationsForChannel(final MobileServiceClient client, String registrationId) {
+
+        final SettableFuture<JsonElement> resultFuture = SettableFuture.create();
+        ArrayList parameters = new ArrayList<>();
+
+        parameters.add(new Pair<>("channelUri", registrationId));
+        ListenableFuture<JsonElement> serviceFilterFuture = client.invokeApi("deleteRegistrationsForChannel", HttpConstants.DeleteMethod, parameters);
+
+        Futures.addCallback(serviceFilterFuture, new FutureCallback<JsonElement>() {
+            @Override
+            public void onFailure(Throwable exception) {
+                resultFuture.setException(exception);
+            }
 
             @Override
+            public void onSuccess(JsonElement response) {
+                resultFuture.set(response);
+            }
+        });
+
+        return resultFuture;
+    }
+
+    private TestCase createInitialDeleteRegistrationTest(final String testName) {
+        final TestCase deleteChannelTest = new TestCase() {
+            @Override
             protected void executeTest(MobileServiceClient client, final TestExecutionCallback callback) {
-
-                JsonObject jsonObject = null;
-                final TestCase testCase = this;
-
-                TestResult testResult = new TestResult();
-                testResult.setTestCase(testCase);
+                this.log("Starting InitialDeleteRegistrationTest");
+                final TestResult result = new TestResult();
+                result.setStatus(TestStatus.Passed);
+                result.setTestCase(this);
 
                 try {
+                    String registrationId = getRegistrationId(client);
+                    this.log("Acquired registrationId:" + registrationId);
 
-                    MobileServiceJsonTable table = client.getTable(tableName);
-                    JsonObject item = new JsonObject();
-                    item.addProperty("method", "send");
-                    item.addProperty("registrationId", registrationId);
-                    item.add("payload", payload);
+                    JsonElement deleteChannelResult = deleteRegistrationsForChannel(client, registrationId).get();
+                    if (!deleteChannelResult.isJsonNull()) {
+                        this.log("deleteRegistrationsForChannel failed");
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    }
 
-                    jsonObject = table.insert(item).get();
-
-                    log("Error, expected exception, but got none.");
-                    log("Returned jsonObject: " + jsonObject.toString());
-                    testResult.setStatus(TestStatus.Failed);
-
-                    callback.onTestComplete(testCase, testResult);
-
+                    this.log("deleteRegistrationsForChannel successful");
+                    clearRegistrationId();
+                    this.log("Instance id cleared");
+                    callback.onTestComplete(this, result);
                 } catch (Exception e) {
+                    callback.onTestComplete(this, this.createResultFromException(e));
 
-                    log("Received expected exception: " + e.toString());
+                }
+            }
+        };
 
-                    if (jsonObject != null) {
-                        log("Returned jsonObject: " + jsonObject.toString());
+        deleteChannelTest.setName(testName);
+        return deleteChannelTest;
+    }
+
+    private TestCase createRegistrationTest(String testName) {
+
+        TestCase test = new TestCase(testName) {
+
+            @Override
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+
+                try {
+                    this.log("Starting Registration Test");
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+
+                    final MobileServicePush mobileServicePush = client.getPush();
+                    String registrationId = getRegistrationId(client);
+                    this.log("Acquired registrationId:" + registrationId);
+
+                    mobileServicePush.register(registrationId).get();
+
+                    ArrayList<Pair<String, String>> parameters = new ArrayList<>();
+                    parameters.add(new Pair<>("channelUri", registrationId));
+                    JsonElement registerResult = verifyRegisterInstallationResult(client, parameters).get();
+                    if (!registerResult.getAsBoolean()) {
+                        this.log("Register failed");
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
                     }
 
-                    testResult.setStatus(TestStatus.Passed);
-                    callback.onTestComplete(testCase, testResult);
+                    this.log("Verified registration");
+
+                    mobileServicePush.unregister().get();
+                    this.log("Unregistration done");
+                    this.log("Test complete");
+                    callback.onTestComplete(this, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
                     return;
                 }
             }
-
-            ;
         };
+
+        test.setName(testName);
+        return test;
     }
 
-    private TestCase createPushTest(String testName, String jsonPayload) {
-        final JsonElement payload = new JsonParser().parse(jsonPayload);
-        TestCase result = new TestCase(testName) {
+    private TestCase createLoginRegistrationTest(String testName) {
+
+        TestCase test = new TestCase(testName) {
 
             @Override
-            protected void executeTest(MobileServiceClient client, final TestExecutionCallback callback) {
-                try {
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
 
-                    MobileServiceJsonTable table = client.getTable(tableName);
+                try {
+                    this.log("Starting Login Registration Test");
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+
+                    String registrationId = getRegistrationId(client);
+
+                    this.log("Acquired registrationId:" + registrationId);
+
+                    final MobileServicePush mobileServicePush = client.getPush();
+                    MobileServiceUser dummyUser = getDummyUser(client).get();
+                    client.setCurrentUser(dummyUser);
+
+                    this.log("Setting current user to:" + dummyUser.getUserId());
+
+                    mobileServicePush.register(registrationId).get();
+                    ArrayList<Pair<String, String>> parameters = new ArrayList<>();
+                    parameters.add(new Pair<>("channelUri", registrationId));
+                    JsonElement registerResult = verifyRegisterInstallationResult(client, parameters).get();
+
+                    if (!registerResult.getAsBoolean()) {
+                        this.log("Register failed");
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    }
+
+                    this.log("Verified registration");
+
+                    mobileServicePush.unregister().get();
+
+                    this.log("Unregistration done");
+                    client.setCurrentUser(null);
+                    this.log("Test complete");
+                    callback.onTestComplete(this, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
+                    return;
+                }
+            }
+        };
+
+        test.setName(testName);
+        return test;
+    }
+
+    private TestCase createUnregistrationTest(String testName) {
+
+        TestCase test = new TestCase(testName) {
+
+            @Override
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+
+                try {
+                    this.log("Starting UnRegistration Test");
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+                    final MobileServicePush mobileServicePush = client.getPush();
+                    mobileServicePush.unregister().get();
+
+                    JsonElement unregisterResult = verifyUnregisterInstallationResult(client).get();
+                    if (!unregisterResult.getAsBoolean()) {
+                        this.log("Unregister failed");
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    }
+
+                    this.log("Unregister complete");
+                    this.log("Test complete");
+                    callback.onTestComplete(this, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
+                    return;
+                }
+            }
+        };
+
+        test.setName(testName);
+        return test;
+    }
+
+    private TestCase createPushTest(String testName) {
+        final JsonObject pushContent = new JsonObject();
+        pushContent.addProperty("sample", "PushTest");
+
+        final JsonObject payload = new JsonObject();
+        payload.add("message", pushContent);
+
+        TestCase test = new TestCase(testName) {
+
+            @Override
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+
+                try {
+                    this.log("Starting Push Test");
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+
+                    final MobileServicePush mobileServicePush = client.getPush();
+                    String registrationId = getRegistrationId(client);
+                    this.log("Acquired registrationId:" + registrationId);
+
+                    mobileServicePush.register(registrationId).get();
+                    this.log("registration complete");
+                    ArrayList<Pair<String, String>> parameters = new ArrayList<>();
+                    parameters.add(new Pair<>("channelUri", registrationId));
+                    JsonElement registerResult = verifyRegisterInstallationResult(client, parameters).get();
+
+                    if (!registerResult.getAsBoolean()) {
+                        this.log("Register failed");
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    }
+
+                    this.log("Verified registration");
                     JsonObject item = new JsonObject();
                     item.addProperty("method", "send");
-                    item.addProperty("registrationId", registrationId);
-                    item.add("payload", payload);
+                    item.addProperty("token", "dummy");
+                    item.addProperty("type", "gcm");
 
-                    final TestCase test = this;
-                    JsonObject jsonObject = table.insert(item).get();
-                    final JsonObject expectedPayload;
-                    if (payload.isJsonObject()) {
-                        expectedPayload = payload.getAsJsonObject();
-                    } else {
-                        expectedPayload = new JsonObject();
-                        expectedPayload.add("message", payload);
+                    JsonObject sentPayload = new JsonObject();
+                    sentPayload.add("data", payload);
+                    item.add("payload", sentPayload);
+
+                    this.log("sending push message:" + sentPayload.toString());
+                    JsonElement jsonObject = client.invokeApi("Push", item).get();
+                    if (!PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
                     }
 
-                    log("OnCompleted: " + jsonObject.toString());
-                    GCMMessageManager.instance.waitForPushMessage(5000, GCMMessageHelper.getPushCallback(test, expectedPayload, callback));
-                } catch (Exception exception) {
-                    callback.onTestComplete(this, createResultFromException(exception));
+                    mobileServicePush.unregister().get();
+                    this.log("OnCompleted: " + jsonObject.toString());
+                    callback.onTestComplete(this, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
                     return;
                 }
             }
-
-            ;
         };
 
-        return result;
+        test.setName(testName);
+
+        return test;
     }
 
-    private TestCase createGCMUnregisterTest() {
-        TestCase testCase = new TestCase("Unregister from GCM") {
+    private TestCase createTemplateRegistrationAndPushTest(String testName) {
+
+        TestCase test = new TestCase(testName) {
 
             @Override
-            protected void executeTest(MobileServiceClient client, TestExecutionCallback callback) {
-                GCMRegistrar.unregister(mainActivity);
-                log("Unregistered from GCM");
-                TestResult testResult = new TestResult();
-                testResult.setStatus(TestStatus.Passed);
-                testResult.setTestCase(this);
-                callback.onTestComplete(this, testResult);
-            }
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
 
-        };
+                try {
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
 
-        return testCase;
-    }
+                    this.log("Starting Template Push Test");
 
-    private TestCase createGCMRegisterTest() {
-        TestCase testCase = new TestCase("Register app with GCM") {
+                    final MobileServicePush mobileServicePush = client.getPush();
 
-            @Override
-            protected void executeTest(MobileServiceClient client, final TestExecutionCallback callback) {
-                final TestCase test = this;
-                final TestResult testResult = new TestResult();
-                testResult.setTestCase(this);
-                GCMRegistrar.checkDevice(mainActivity);
-                GCMRegistrar.checkManifest(mainActivity);
-                String registrationId = GCMRegistrar.getRegistrationId(mainActivity);
-                PushTests.registrationId = registrationId;
-                log("Registration ID: " + PushTests.registrationId);
-                if ("".equals(registrationId)) {
-                    GCMRegistrar.register(mainActivity, mainActivity.getGCMSenderId());
-                    log("Called GCMRegistrar.register");
-                    GCMMessageManager.instance.waitForRegistrationMessage(5000, GCMMessageHelper.getRegistrationCallBack(test, callback, PushTests.class));
-                } else {
-                    testResult.setStatus(TestStatus.Passed);
-                    callback.onTestComplete(this, testResult);
+                    String registrationId = getRegistrationId(client);
+                    this.log("Acquired registrationId:" + registrationId);
+
+                    JsonObject templateJson = GetTemplate();
+
+                    mobileServicePush.register(registrationId, templateJson);
+
+                    ArrayList<Pair<String, String>> parameters = new ArrayList<>();
+                    parameters.add(new Pair<>("channelUri", registrationId));
+                    parameters.add(new Pair<>("templates", templateJson.toString()));
+                    JsonElement registerResult = verifyRegisterInstallationResult(client, parameters).get();
+
+                    this.log("template registration complete:" + templateJson.toString());
+
+                    if (!registerResult.getAsBoolean()) {
+                        this.log("Register failed");
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    }
+
+                    PushMessageManager.instance.clearMessages();
+
+                    JsonObject pushMessage = new JsonObject();
+                    pushMessage.addProperty("fullName", "John Doe");
+
+                    JsonObject item = new JsonObject();
+                    item.addProperty("method", "send");
+                    item.addProperty("token", "dummy");
+                    item.addProperty("type", "template");
+                    item.add("payload", pushMessage);
+
+                    JsonObject expectedPushMessage = new JsonObject();
+                    expectedPushMessage.addProperty("user", "John Doe");
+
+                    this.log("sending push message:" + item.toString());
+                    JsonElement jsonObject = client.invokeApi("Push", item).get();
+
+                    if (!PushMessageManager.instance.isPushMessageReceived(30000, expectedPushMessage).get()) {
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    }
+
+                    this.log("push received:" + expectedPushMessage.toString());
+
+                    mobileServicePush.unregister().get();
+                    this.log("unregistration complete");
+                    this.log("OnCompleted: " + jsonObject.toString());
+                    callback.onTestComplete(this, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
+                    return;
                 }
             }
-
         };
 
-        return testCase;
+        test.setName(testName);
+
+        return test;
+    }
+
+    public ListenableFuture<JsonElement> verifyRegisterInstallationResult(MobileServiceClient client, ArrayList<Pair<String, String>> parameters) throws IOException {
+
+        final SettableFuture<JsonElement> resultFuture = SettableFuture.create();
+        ListenableFuture<JsonElement> serviceFilterFuture = client.invokeApi("verifyRegisterInstallationResult", HttpConstants.GetMethod, parameters);
+
+        Futures.addCallback(serviceFilterFuture, new FutureCallback<JsonElement>() {
+            @Override
+            public void onFailure(Throwable exception) {
+                resultFuture.setException(exception);
+            }
+
+            @Override
+            public void onSuccess(JsonElement response) {
+                resultFuture.set(response);
+            }
+        });
+
+        return resultFuture;
+    }
+
+    public ListenableFuture<MobileServiceUser> getDummyUser(MobileServiceClient client) {
+
+        final SettableFuture<MobileServiceUser> resultFuture = SettableFuture.create();
+        ListenableFuture<JsonElement> serviceFilterFuture = client.invokeApi("JwtTokenGenerator", HttpConstants.GetMethod, (ArrayList) null);
+
+        Futures.addCallback(serviceFilterFuture, new FutureCallback<JsonElement>() {
+            @Override
+            public void onFailure(Throwable exception) {
+                resultFuture.setException(exception);
+            }
+
+            @Override
+            public void onSuccess(JsonElement response) {
+                JsonObject userJsonObject = response.getAsJsonObject();
+                String userId = userJsonObject.getAsJsonPrimitive("userId").getAsString();
+                String authenticationToken = userJsonObject.getAsJsonPrimitive("authenticationToken").getAsString();
+                MobileServiceUser user = new MobileServiceUser(userId);
+                user.setAuthenticationToken(authenticationToken);
+                resultFuture.set(user);
+
+            }
+        });
+
+        return resultFuture;
+    }
+
+    public String getRegistrationId(MobileServiceClient client) throws IOException {
+        if (this.iid == null) {
+            this.iid = InstanceID.getInstance(client.getContext());
+        }
+        if (this.registrationId == null) {
+            String senderId = mainActivity.getGCMSenderId();
+            this.registrationId = iid.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+        }
+        return this.registrationId;
+    }
+
+    public void clearRegistrationId() throws IOException {
+        if (this.iid == null || this.registrationId == null) {
+            return;
+        }
+
+        registrationId = null;
+        iid.deleteInstanceID();
+    }
+
+    public ListenableFuture<JsonElement> verifyUnregisterInstallationResult(final MobileServiceClient client) {
+
+        final SettableFuture<JsonElement> resultFuture = SettableFuture.create();
+
+        ListenableFuture<JsonElement> serviceFilterFuture = client.invokeApi("verifyUnregisterInstallationResult", HttpConstants.GetMethod, new ArrayList<Pair<String, String>>());
+
+        Futures.addCallback(serviceFilterFuture, new FutureCallback<JsonElement>() {
+            @Override
+            public void onFailure(Throwable exception) {
+                resultFuture.setException(exception);
+            }
+
+            @Override
+            public void onSuccess(JsonElement response) {
+                resultFuture.set(response);
+            }
+        });
+
+        return resultFuture;
+    }
+
+
+    private JsonObject GetTemplate() {
+        String templateName = "GcmTemplate";
+
+        JsonObject userJson = new JsonObject();
+        userJson.addProperty("user", "$(fullName)");
+
+        JsonObject messageJson = new JsonObject();
+        messageJson.add("message", userJson);
+
+        JsonObject dataJson = new JsonObject();
+        dataJson.add("data", messageJson);
+
+        JsonObject bodyJson = new JsonObject();
+        bodyJson.add("body", dataJson);
+
+        JsonObject templateJson = new JsonObject();
+        templateJson.add(templateName, bodyJson);
+        return templateJson;
     }
 }

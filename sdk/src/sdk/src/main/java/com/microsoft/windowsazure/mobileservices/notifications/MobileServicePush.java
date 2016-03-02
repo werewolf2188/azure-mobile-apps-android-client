@@ -56,6 +56,8 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -78,9 +80,8 @@ public class MobileServicePush {
     /**
      * Creates a new NotificationHub client
      *
-     * @param notificationHubPath Notification Hub path
-     * @param connectionString    Notification Hub connection string
-     * @param context             Android context used to access SharedPreferences
+     * @param client  The MobileServiceClient used to invoke the push operations
+     * @param context Android context used to access SharedPreferences
      */
     public MobileServicePush(MobileServiceClient client, Context context) {
 
@@ -102,6 +103,17 @@ public class MobileServicePush {
      * @return Future with Registration Information
      */
     public ListenableFuture<Void> register(String pnsHandle) {
+        return register(pnsHandle, (JsonObject) null);
+    }
+
+    /**
+     * Registers the client for template notifications
+     *
+     * @param pnsHandle PNS specific identifier
+     * @param templates Template to be used for registration
+     * @return Future with TemplateRegistration Information
+     */
+    public ListenableFuture<Void> register(String pnsHandle, JsonObject templates) {
 
         final SettableFuture<Void> resultFuture = SettableFuture.create();
 
@@ -110,7 +122,19 @@ public class MobileServicePush {
             return resultFuture;
         }
 
-        ListenableFuture<Void> registerInternalFuture = createOrUpdateInstallation(pnsHandle);
+        if (templates != null) {
+            for (Map.Entry<String, JsonElement> entry : templates.entrySet()) {
+                if (entry.getValue() != null && entry.getValue().isJsonObject()) {
+                    JsonObject template = entry.getValue().getAsJsonObject();
+                    if (template.get("body") != null && template.get("body").isJsonObject()) {
+                        JsonObject templateBody = template.get("body").getAsJsonObject();
+                        template.addProperty("body", templateBody.toString());
+                    }
+                }
+            }
+        }
+
+        ListenableFuture<Void> registerInternalFuture = createOrUpdateInstallation(pnsHandle, templates);
 
         Futures.addCallback(registerInternalFuture, new FutureCallback<Void>() {
             @Override
@@ -157,7 +181,7 @@ public class MobileServicePush {
      *
      * @param pnsHandle    PNS specific identifier
      * @param templateName The template name
-     * @param templateBody     The template body
+     * @param templateBody The template body
      * @return Future with TemplateRegistration Information
      */
     public ListenableFuture<Void> registerTemplate(String pnsHandle, String templateName, String templateBody) {
@@ -207,6 +231,7 @@ public class MobileServicePush {
 
         return templateObject;
     }
+
     /**
      * Registers the client for template notifications
      *
@@ -268,8 +293,7 @@ public class MobileServicePush {
         });
     }
 
-    private ListenableFuture<Void> deleteInstallation()
-    {
+    private ListenableFuture<Void> deleteInstallation() {
         final SettableFuture<Void> resultFuture = SettableFuture.create();
 
         String installationId = MobileServiceApplication.getInstallationId(mHttpClient.getClient().getContext());
@@ -298,8 +322,7 @@ public class MobileServicePush {
         return createOrUpdateInstallation(pnsHandle, null);
     }
 
-    private ListenableFuture<Void> createOrUpdateInstallation(String pnsHandle, JsonElement templates)
-    {
+    private ListenableFuture<Void> createOrUpdateInstallation(String pnsHandle, JsonElement templates) {
         JsonObject installation = new JsonObject();
         installation.addProperty("pushChannel", pnsHandle);
         installation.addProperty("platform", "gcm");
@@ -335,6 +358,6 @@ public class MobileServicePush {
         });
 
         return resultFuture;
-   }
+    }
 
 }
