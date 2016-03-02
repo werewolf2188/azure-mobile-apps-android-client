@@ -58,7 +58,7 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.log.StorageLogger;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.ClientSDKLoginTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.CustomApiTests;
-import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.EnhancedPushTests;
+import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.PushTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.LoginTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.MiscTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.OfflineTests;
@@ -150,7 +150,7 @@ public class MainActivity extends Activity {
 
         ClientSDKLoginTests.mainActivity = this;
 
-        EnhancedPushTests.mainActivity = this;
+        PushTests.mainActivity = this;
 
         refreshTestGroupsAndLog();
     }
@@ -189,7 +189,7 @@ public class MainActivity extends Activity {
                         // adapter.add(new PushTests());
                         adapter.add(new CustomApiTests());
                         adapter.add(new SystemPropertiesTests(isNetBackend));
-                        adapter.add(new EnhancedPushTests(isNetBackend));
+                        adapter.add(new PushTests());
                         adapter.add(new OfflineTests());
 
                         ArrayList<Pair<TestCase, String>> allTests = new ArrayList<Pair<TestCase, String>>();

@@ -80,9 +80,8 @@ public class MobileServicePush {
     /**
      * Creates a new NotificationHub client
      *
-     * @param notificationHubPath Notification Hub path
-     * @param connectionString    Notification Hub connection string
-     * @param context             Android context used to access SharedPreferences
+     * @param client  The MobileServiceClient used to invoke the push operations
+     * @param context Android context used to access SharedPreferences
      */
     public MobileServicePush(MobileServiceClient client, Context context) {
 
@@ -111,7 +110,7 @@ public class MobileServicePush {
      * Registers the client for template notifications
      *
      * @param pnsHandle PNS specific identifier
-     * @param templates temp
+     * @param templates Template to be used for registration
      * @return Future with TemplateRegistration Information
      */
     public ListenableFuture<Void> register(String pnsHandle, JsonObject templates) {
@@ -129,8 +128,7 @@ public class MobileServicePush {
                     JsonObject template = entry.getValue().getAsJsonObject();
                     if (template.get("body") != null && template.get("body").isJsonObject()) {
                         JsonObject templateBody = template.get("body").getAsJsonObject();
-                        template.remove("body");
-                        template.addProperty("body",templateBody.toString());
+                        template.addProperty("body", templateBody.toString());
                     }
                 }
             }

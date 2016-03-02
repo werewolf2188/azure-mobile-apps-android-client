@@ -41,7 +41,7 @@ import junit.framework.Assert;
 
 import java.util.concurrent.ExecutionException;
 
-public class EnhancedPushTests extends InstrumentationTestCase {
+public class PushTests extends InstrumentationTestCase {
 
     final String appUrl = "http://myapp.com/";
     final String pnsApiUrl = "push";
@@ -208,18 +208,7 @@ public class EnhancedPushTests extends InstrumentationTestCase {
         String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
 
         final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" +
-                "{" +
-                "\"template1\":" +
-                "{\"body\":\"" +
-                "{\\\"data\\\":\\\"abc\\\"}" +
-                "\"}," +
-                "\"template2\":" +
-                "{\"body\":\"" +
-                "{\\\"data\\\":\\\"abc\\\"}" +
-                "\"}" +
-                "}" +
-                "}";
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" + createTemplateObject(true).toString() + "}";
 
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
@@ -274,18 +263,7 @@ public class EnhancedPushTests extends InstrumentationTestCase {
         String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
 
         final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" +
-                "{" +
-                "\"template1\":" +
-                "{\"body\":\"" +
-                "{\\\"data\\\":\\\"abc\\\"}" +
-                "\"}," +
-                "\"template2\":" +
-                "{\"body\":\"" +
-                "{\\\"data\\\":\\\"abc\\\"}" +
-                "\"}" +
-                "}" +
-                "}";
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" + createTemplateObject(true).toString() + "}";
 
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
@@ -338,7 +316,7 @@ public class EnhancedPushTests extends InstrumentationTestCase {
         if (isTemplateBodyString) {
             templateDetailObject.addProperty("body", templateBody.toString());
         } else {
-            templateDetailObject.add("body",templateBody);
+            templateDetailObject.add("body", templateBody);
         }
 
         JsonObject templateObject = new JsonObject();

@@ -37,10 +37,6 @@ public class PushMessageManager {
         return result;
     }
 
-    public synchronized boolean removeMessage(JsonElement message) {
-        return (pushMessages.remove(message));
-    }
-
     public synchronized void  clearMessages() {
         pushMessages.clear();
     }
@@ -55,7 +51,6 @@ public class PushMessageManager {
             @Override
             public void run() {
                 if (!pushMessages.isEmpty() && checkMessage(message)) {
-                    removeMessage(message);
                     this.cancel();
                     resultFuture.set(true);
                 } else {

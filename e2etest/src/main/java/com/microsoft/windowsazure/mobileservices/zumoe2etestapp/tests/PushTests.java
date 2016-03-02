@@ -44,18 +44,16 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestSt
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class EnhancedPushTests extends TestGroup {
+public class PushTests extends TestGroup {
 
-    private boolean isNetBackend = true;
     public static MainActivity mainActivity;
     public static String registrationId;
     InstanceID iid;
 
 
-    public EnhancedPushTests(boolean isNetBackend) {
-        super("Enhanced Push tests");
+    public PushTests() {
+        super("Push tests");
 
-        this.isNetBackend = isNetBackend;
         this.addTest(createInitialDeleteRegistrationTest("Initial DeleteRegistration Test"));
         this.addTest(createRegistrationTest("Registration Test"));
         this.addTest(createLoginRegistrationTest("Login Registration Test"));
@@ -104,11 +102,12 @@ public class EnhancedPushTests extends TestGroup {
                     if (!deleteChannelResult.isJsonNull()) {
                         this.log("deleteRegistrationsForChannel failed");
                         result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
                     }
+
                     this.log("deleteRegistrationsForChannel successful");
-
                     clearRegistrationId();
-
                     this.log("Instance id cleared");
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
@@ -144,11 +143,13 @@ public class EnhancedPushTests extends TestGroup {
                     ArrayList<Pair<String, String>> parameters = new ArrayList<>();
                     parameters.add(new Pair<>("channelUri", registrationId));
                     JsonElement registerResult = verifyRegisterInstallationResult(client, parameters).get();
-
                     if (!registerResult.getAsBoolean()) {
                         this.log("Register failed");
                         result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
                     }
+
                     this.log("Verified registration");
 
                     mobileServicePush.unregister().get();
@@ -197,6 +198,8 @@ public class EnhancedPushTests extends TestGroup {
                     if (!registerResult.getAsBoolean()) {
                         this.log("Register failed");
                         result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
                     }
 
                     this.log("Verified registration");
@@ -237,11 +240,11 @@ public class EnhancedPushTests extends TestGroup {
                     if (!unregisterResult.getAsBoolean()) {
                         this.log("Unregister failed");
                         result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
                         return;
                     }
 
                     this.log("Unregister complete");
-
                     this.log("Test complete");
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
@@ -304,6 +307,8 @@ public class EnhancedPushTests extends TestGroup {
                     JsonElement jsonObject = client.invokeApi("Push", item).get();
                     if (!PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
                         result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
                     }
 
                     mobileServicePush.unregister().get();
@@ -377,6 +382,8 @@ public class EnhancedPushTests extends TestGroup {
 
                     if (!PushMessageManager.instance.isPushMessageReceived(30000, expectedPushMessage).get()) {
                         result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
                     }
 
                     this.log("push received:" + expectedPushMessage.toString());
