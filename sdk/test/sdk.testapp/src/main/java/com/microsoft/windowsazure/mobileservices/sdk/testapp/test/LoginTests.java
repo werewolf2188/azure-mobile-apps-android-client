@@ -458,7 +458,6 @@ public class LoginTests extends InstrumentationTestCase {
         if (params == null) {
             params = new HashMap<String, String>();
         }
-        params = new HashMap<String, String>(params);
 
         String paramString = "";
         for (Map.Entry<String, String> parameter : params.entrySet()) {

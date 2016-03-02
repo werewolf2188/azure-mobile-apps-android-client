@@ -1003,7 +1003,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
         final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
@@ -1027,6 +1026,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         };
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -1075,7 +1075,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
         final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
@@ -1100,6 +1099,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         };
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
@@ -1152,7 +1152,6 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
         final ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
         MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
         final ThrownExceptionFlag thrownExceptionFlag = new ThrownExceptionFlag();
 
         thrownExceptionFlag.Thrown = true;
@@ -1176,6 +1175,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
         };
 
         client = client.withFilter(getTestFilter(serviceFilterContainer, onHandleRequest, "{\"id\":\"abc\",\"String\":\"Hey\"}"));
+        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
 
         MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
 
