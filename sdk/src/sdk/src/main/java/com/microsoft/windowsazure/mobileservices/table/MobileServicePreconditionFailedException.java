@@ -25,6 +25,9 @@ package com.microsoft.windowsazure.mobileservices.table;
 
 import com.microsoft.windowsazure.mobileservices.MobileServiceException;
 
+/**
+ * Provides details of http response with status code of 'Precondition Failed' and the server object
+ */
 public class MobileServicePreconditionFailedException extends MobileServiceException {
 
     /**
@@ -38,9 +41,9 @@ public class MobileServicePreconditionFailedException extends MobileServiceExcep
      * Initializes a new instance of the
      * MobileServicePreconditionFailedException class.
      *
-     * @param innerException The inner exception.
-     * @param item           The current instance from the server that the precondition
-     *                       failed for.
+     * @param msException The inner exception.
+     * @param item        The current instance from the server that the precondition
+     *                    failed for.
      */
     public MobileServicePreconditionFailedException(MobileServiceException msException, Object item) {
         super(msException.getMessage(), msException.getCause(), msException.getResponse());

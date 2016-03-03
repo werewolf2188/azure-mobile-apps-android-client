@@ -34,7 +34,7 @@ public interface ApiJsonOperationCallback {
     /**
      * Method to call when the operation is completed
      *
-     * @param jsonElement The obtained jsonElement
+     * @param jsonObject The obtained jsonElement
      * @param exception   An exception representing the error, in case there was one
      * @param response    Response object
      */

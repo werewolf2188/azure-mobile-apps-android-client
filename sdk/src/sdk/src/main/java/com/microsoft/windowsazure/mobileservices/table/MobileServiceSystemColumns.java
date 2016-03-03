@@ -2,7 +2,6 @@ package com.microsoft.windowsazure.mobileservices.table;
 
 /**
  * Name of system columns on a Mobile Service table.
- * Created by marianosanchez on 10/27/14.
  */
 public class MobileServiceSystemColumns {
     /*

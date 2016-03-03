@@ -19,7 +19,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 
 /**
- * MobileServicePreconditionFailedExceptionJson.java
+ * Provides details of http response with status code of 'Precondition Failed' and the server object as Json
  */
 package com.microsoft.windowsazure.mobileservices.table;
 
@@ -37,7 +37,7 @@ public class MobileServicePreconditionFailedExceptionJson extends MobileServiceE
      * Initializes a new instance of the
      * MobileServicePreconditionFailedExceptionJson class.
      *
-     * @param throwable The inner exception.
+     * @param msException The inner exception.
      * @param value     The current instance from the server that the precondition
      *                  failed for.
      */

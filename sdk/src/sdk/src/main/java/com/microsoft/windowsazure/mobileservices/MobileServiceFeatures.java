@@ -89,7 +89,7 @@ public enum MobileServiceFeatures {
     }
 
     /**
-     * Returns a comma-separated list of feature codes which can be sent to
+     * @return a comma-separated list of feature codes which can be sent to
      * the service in the features header.
      *
      * @param features a set of features

@@ -32,7 +32,7 @@ public class MobileServiceLocalStoreException extends Exception {
     /**
      * Creates a new MobileServiceLocalStoreException with a detail message
      *
-     * @param detail The detail message
+     * @param detailMessage The detail message
      */
     public MobileServiceLocalStoreException(String detailMessage) {
         super(detailMessage);
@@ -51,7 +51,7 @@ public class MobileServiceLocalStoreException extends Exception {
      * Creates a new MobileServiceLocalStoreException with a detail message and
      * a cause
      *
-     * @param detail    The detail message
+     * @param detailMessage    The detail message
      * @param throwable The exception cause
      */
     public MobileServiceLocalStoreException(String detailMessage, Throwable throwable) {

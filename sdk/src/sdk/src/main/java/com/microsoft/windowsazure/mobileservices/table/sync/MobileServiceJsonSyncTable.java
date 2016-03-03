@@ -58,7 +58,7 @@ public class MobileServiceJsonSyncTable {
     }
 
     /**
-     * Returns the name of the represented table
+     * @return the name of the represented table
      */
     public String getName() {
         return mName;

@@ -25,6 +25,10 @@ package com.microsoft.windowsazure.mobileservices;
 
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
 
+
+/**
+ *  Encapsulates the original exception and presents it in the context of MobileApp
+ */
 public class MobileServiceException extends Exception {
 
     /**

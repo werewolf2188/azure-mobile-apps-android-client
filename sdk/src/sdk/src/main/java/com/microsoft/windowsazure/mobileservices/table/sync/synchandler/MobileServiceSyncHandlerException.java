@@ -35,7 +35,7 @@ public class MobileServiceSyncHandlerException extends Exception {
     /**
      * Creates a new MobileServiceSyncHandlerException with a detail message
      *
-     * @param detail The detail message
+     * @param detailMessage The detail message
      */
     public MobileServiceSyncHandlerException(String detailMessage) {
         super(detailMessage);
@@ -54,7 +54,7 @@ public class MobileServiceSyncHandlerException extends Exception {
      * Creates a new MobileServiceSyncHandlerException with a detail message and
      * a cause
      *
-     * @param detail    The detail message
+     * @param detailMessage    The detail message
      * @param throwable The exception cause
      */
     public MobileServiceSyncHandlerException(String detailMessage, Throwable throwable) {

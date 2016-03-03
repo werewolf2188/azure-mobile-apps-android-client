@@ -81,7 +81,7 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * Entry-point for Microsoft Azure Mobile Services interactions
+ * Entry point for Microsoft Azure Mobile app interactions
  */
 public class MobileServiceClient {
     /**
@@ -326,8 +326,7 @@ public class MobileServiceClient {
      *
      * @param provider The provider used for the authentication process
      * @param callback Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider
-     * provider)} instead
+     * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider)} instead
      */
     public void login(MobileServiceAuthenticationProvider provider, UserAuthenticationCallback callback) {
         login(provider.toString(), callback);
@@ -341,8 +340,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param parameters Aditional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider
-     * provider)} instead
+     * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider)} instead
      */
     public void login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters, UserAuthenticationCallback callback) {
         login(provider.toString(), parameters, callback);
@@ -398,7 +396,7 @@ public class MobileServiceClient {
      *
      * @param provider The provider used for the authentication process
      * @param callback Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login(String provider)} instead
+     * @deprecated use {@link #login(String provider)} instead
      */
     public void login(String provider, final UserAuthenticationCallback callback) {
         login(provider, (HashMap<String, String>) null, callback);
@@ -411,7 +409,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param parameters Aditional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login(String provider)} instead
+     * @deprecated use {@link #login(String provider)} instead
      */
     public void login(String provider, HashMap<String, String> parameters, final UserAuthenticationCallback callback) {
         ListenableFuture<MobileServiceUser> loginFuture = login(provider, parameters);
@@ -466,8 +464,7 @@ public class MobileServiceClient {
      * @param oAuthToken A Json object representing the oAuth token used for
      *                   authentication
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider
-     * provider, com.google.gson.JsonObject oAuthToken)} instead
+     * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider, com.google.gson.JsonObject oAuthToken)} instead
      */
     public void login(MobileServiceAuthenticationProvider provider, JsonObject oAuthToken, UserAuthenticationCallback callback) {
         login(provider, oAuthToken, null, callback);
@@ -483,8 +480,7 @@ public class MobileServiceClient {
      *                   authentication
      * @param parameters Aditional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider
-     * provider, com.google.gson.JsonObject oAuthToken)} instead
+     * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider, com.google.gson.JsonObject oAuthToken)} instead
      */
     public void login(MobileServiceAuthenticationProvider provider, JsonObject oAuthToken, HashMap<String, String> parameters, UserAuthenticationCallback callback) {
         login(provider.toString(), oAuthToken, parameters, callback);
@@ -531,7 +527,7 @@ public class MobileServiceClient {
      * @param oAuthToken A Json object representing the oAuth token used for
      *                   authentication
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login(String provider, com.google.gson.JsonObject oAuthToken)}
+     * @deprecated use {@link #login(String provider, com.google.gson.JsonObject oAuthToken)}
      * instead
      */
     public void login(String provider, JsonObject oAuthToken, UserAuthenticationCallback callback) {
@@ -548,7 +544,7 @@ public class MobileServiceClient {
      *                   authentication
      * @param parameters Aditional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login(String provider, com.google.gson.JsonObject oAuthToken)}
+     * @deprecated use {@link #login(String provider, com.google.gson.JsonObject oAuthToken)}
      * instead
      */
     public void login(String provider, JsonObject oAuthToken, HashMap<String, String> parameters, UserAuthenticationCallback callback) {
@@ -589,8 +585,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider
-     * provider, String oAuthToken)} instead
+     * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider, String oAuthToken)} instead
      */
     public void login(MobileServiceAuthenticationProvider provider, String oAuthToken, UserAuthenticationCallback callback) {
         login(provider, oAuthToken, null, callback);
@@ -604,8 +599,7 @@ public class MobileServiceClient {
      * @param oAuthToken The oAuth token used for authentication
      * @param parameters Aditional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider
-     * provider, String oAuthToken)} instead
+     * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider, String oAuthToken)} instead
      */
     public void login(MobileServiceAuthenticationProvider provider, String oAuthToken, HashMap<String, String> parameters, UserAuthenticationCallback callback) {
         login(provider.toString(), oAuthToken, parameters, callback);
@@ -667,7 +661,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login(String provider, String oAuthToken)} instead
+     * @deprecated use {@link #login(String provider, String oAuthToken)} instead
      */
     public void login(String provider, String oAuthToken, final UserAuthenticationCallback callback) {
         login(provider, oAuthToken, null, callback);
@@ -681,7 +675,7 @@ public class MobileServiceClient {
      * @param oAuthToken The oAuth token used for authentication
      * @param parameters Aditional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link login(String provider, String oAuthToken)} instead
+     * @deprecated use {@link #login(String provider, String oAuthToken)} instead
      */
     public void login(String provider, String oAuthToken, HashMap<String, String> parameters, final UserAuthenticationCallback callback) {
         ListenableFuture<MobileServiceUser> loginFuture = login(provider, oAuthToken, parameters);
@@ -719,7 +713,7 @@ public class MobileServiceClient {
      *
      * @param activity The activity that triggered the authentication
      * @param callback Callback to invoke when the authentication process finishes
-     * @deprecated use {@link loginWithGoogleAccount( android.app.Activity activity)} instead
+     * @deprecated use {@link #loginWithGoogleAccount( android.app.Activity activity)} instead
      */
     public void loginWithGoogleAccount(Activity activity, final UserAuthenticationCallback callback) {
         loginWithGoogleAccount(activity, GOOGLE_USER_INFO_SCOPE, callback);
@@ -753,8 +747,7 @@ public class MobileServiceClient {
      * @param activity The activity that triggered the authentication
      * @param scopes   The scopes used as authentication token type for login
      * @param callback Callback to invoke when the authentication process finishes
-     * @deprecated use {@link loginWithGoogleAccount( android.app.Activity activity, String
-     * scopes)} instead
+     * @deprecated use {@link #loginWithGoogleAccount( android.app.Activity activity, String scopes)} instead
      */
     public void loginWithGoogleAccount(Activity activity, String scopes, final UserAuthenticationCallback callback) {
         ListenableFuture<MobileServiceUser> loginFuture = loginWithGoogleAccount(activity, scopes);
@@ -794,8 +787,7 @@ public class MobileServiceClient {
      * @param activity The activity that triggered the authentication
      * @param account  The account used for the login operation
      * @param callback Callback to invoke when the authentication process finishes
-     * @deprecated use {@link loginWithGoogleAccount( android.app.Activity activity, android.accounts.Account
-     * account)} instead
+     * @deprecated use {@link #loginWithGoogleAccount( android.app.Activity activity, android.accounts.Account account)} instead
      */
     public void loginWithGoogleAccount(Activity activity, Account account, final UserAuthenticationCallback callback) {
         loginWithGoogleAccount(activity, account, GOOGLE_USER_INFO_SCOPE, callback);
@@ -874,8 +866,7 @@ public class MobileServiceClient {
      * @param account  The account used for the login operation
      * @param scopes   The scopes used as authentication token type for login
      * @param callback Callback to invoke when the authentication process finishes
-     * @deprecated use {@link loginWithGoogleAccount( android.app.Activity activity, android.accounts.Account
-     * account, String scopes)} instead
+     * @deprecated use {@link #loginWithGoogleAccount( android.app.Activity activity, android.accounts.Account account, String scopes)} instead
      */
     public void loginWithGoogleAccount(Activity activity, Account account, String scopes, final UserAuthenticationCallback callback) {
         ListenableFuture<MobileServiceUser> loginFuture = loginWithGoogleAccount(activity, account, scopes);
@@ -915,7 +906,7 @@ public class MobileServiceClient {
     }
 
     /**
-     * Returns The Mobile Service URL
+     * @return The Mobile Service URL
      */
     public URL getAppUrl() {
         return mAppUrl;
@@ -929,7 +920,7 @@ public class MobileServiceClient {
     }
 
     /**
-     * Returns the current authenticated user
+     * @return the current authenticated user
      */
     public MobileServiceUser getCurrentUser() {
         return mCurrentUser;
@@ -945,7 +936,7 @@ public class MobileServiceClient {
     }
 
     /**
-     * Returns a MobileServiceSyncContext instance.
+     * @return a MobileServiceSyncContext instance.
      *
      * @return the MobileServiceSyncContext instance
      */
@@ -964,7 +955,7 @@ public class MobileServiceClient {
     }
 
     /**
-     * Returns a MobileServiceJsonSyncTable instance, which provides untyped
+     * @return a MobileServiceJsonSyncTable instance, which provides untyped
      * data operations for a local table.
      *
      * @param name Table name
@@ -997,7 +988,7 @@ public class MobileServiceClient {
     }
 
     /**
-     * Returns a MobileServiceSyncTable<E> instance, which provides strongly
+     * @return a MobileServiceSyncTable<E> instance, which provides strongly
      * typed data operations for a local table.
      *
      * @param clazz The class used for table name and data serialization
@@ -1008,7 +999,7 @@ public class MobileServiceClient {
     }
 
     /**
-     * Returns a MobileServiceSyncTable<E> instance, which provides strongly
+     * @return a MobileServiceSyncTable<E> instance, which provides strongly
      * typed data operations for a local table.
      *
      * @param name  Table name
@@ -1036,7 +1027,7 @@ public class MobileServiceClient {
      * @param apiName  The API name
      * @param clazz    The API result class
      * @param callback The callback to invoke after the API execution
-     * @deprecated use {@link invokeApi(String apiName, Class<E> clazz)} instead
+     * @deprecated use {@link #invokeApi(String apiName, Class clazz)} instead
      */
     public <E> void invokeApi(String apiName, Class<E> clazz, ApiOperationCallback<E> callback) {
         invokeApi(apiName, null, HttpConstants.PostMethod, null, clazz, callback);
@@ -1060,8 +1051,7 @@ public class MobileServiceClient {
      * @param body     The object to send as the request body
      * @param clazz    The API result class
      * @param callback The callback to invoke after the API execution
-     * @deprecated use {@link invokeApi(String apiName, Object body, Class<E>
-     * clazz)} instead
+     * @deprecated use {@link #invokeApi(String apiName, Object body, Class clazz)} instead
      */
     public <E> void invokeApi(String apiName, Object body, Class<E> clazz, ApiOperationCallback<E> callback) {
         invokeApi(apiName, body, HttpConstants.PostMethod, null, clazz, callback);
@@ -1087,8 +1077,7 @@ public class MobileServiceClient {
      * @param parameters The query string parameters sent in the request
      * @param clazz      The API result class
      * @param callback   The callback to invoke after the API execution
-     * @deprecated use {@link invokeApi(String apiName, String httpMethod,
-     * java.util.List< android.util.Pair<String, String>> parameters, Class<E> clazz)}
+     * @deprecated use {@link #invokeApi(String apiName, String httpMethod, List parameters, Class clazz)}
      * instead
      */
     public <E> void invokeApi(String apiName, String httpMethod, List<Pair<String, String>> parameters, Class<E> clazz, ApiOperationCallback<E> callback) {
@@ -1162,9 +1151,7 @@ public class MobileServiceClient {
      * @param parameters The query string parameters sent in the request
      * @param clazz      The API result class
      * @param callback   The callback to invoke after the API execution
-     * @deprecated use {@link invokeApi(String apiName, Object body, String
-     * httpMethod, java.util.List< android.util.Pair<String, String>> parameters, final
-     * Class<E> clazz)} instead
+     * @deprecated use {@link #invokeApi(String apiName, Object body, String httpMethod, List parameters, Class clazz)} instead
      */
     public <E> void invokeApi(String apiName, Object body, String httpMethod, List<Pair<String, String>> parameters, final Class<E> clazz,
                               final ApiOperationCallback<E> callback) {
@@ -1202,7 +1189,7 @@ public class MobileServiceClient {
      *
      * @param apiName  The API name
      * @param callback The callback to invoke after the API execution
-     * @deprecated use {@link invokeApi(String apiName)} instead
+     * @deprecated use {@link #invokeApi(String apiName)} instead
      */
     public void invokeApi(String apiName, ApiJsonOperationCallback callback) {
         invokeApi(apiName, null, callback);
@@ -1224,7 +1211,7 @@ public class MobileServiceClient {
      * @param apiName  The API name
      * @param body     The json element to send as the request body
      * @param callback The callback to invoke after the API execution
-     * @deprecated use {@link invokeApi(String apiName, com.google.gson.JsonElement body)}
+     * @deprecated use {@link #invokeApi(String apiName, com.google.gson.JsonElement body)}
      * instead
      */
     public void invokeApi(String apiName, JsonElement body, ApiJsonOperationCallback callback) {
@@ -1249,8 +1236,7 @@ public class MobileServiceClient {
      * @param httpMethod The HTTP Method used to invoke the API
      * @param parameters The query string parameters sent in the request
      * @param callback   The callback to invoke after the API execution
-     * @deprecated use {@link invokeApi(String apiName, String httpMethod,
-     * java.util.List< android.util.Pair<String, String>> parameters)} instead
+     * @deprecated use {@link #invokeApi(String apiName, String httpMethod, List parameters)} instead
      */
     public void invokeApi(String apiName, String httpMethod, List<Pair<String, String>> parameters, ApiJsonOperationCallback callback) {
         invokeApi(apiName, null, httpMethod, parameters, callback);
@@ -1333,8 +1319,7 @@ public class MobileServiceClient {
      * @param httpMethod The HTTP Method used to invoke the API
      * @param parameters The query string parameters sent in the request
      * @param callback   The callback to invoke after the API execution
-     * @deprecated use {@link invokeApi(String apiName, com.google.gson.JsonElement body, String
-     * httpMethod, java.util.List< android.util.Pair<String, String>> parameters)} instead
+     * @deprecated use {@link #invokeApi(String apiName, com.google.gson.JsonElement body, String httpMethod, List parameters)} instead
      */
     public void invokeApi(String apiName, JsonElement body, String httpMethod, List<Pair<String, String>> parameters, final ApiJsonOperationCallback callback) {
 
@@ -1506,7 +1491,7 @@ public class MobileServiceClient {
 
     /**
      * Gets the ServiceFilter. If there is no ServiceFilter, it creates and
-     * returns a default filter
+     * @return a default filter
      *
      * @return ServiceFilter The service filter to use with the client.
      */

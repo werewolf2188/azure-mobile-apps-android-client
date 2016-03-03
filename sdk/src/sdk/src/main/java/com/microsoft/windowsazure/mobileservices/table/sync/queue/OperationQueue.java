@@ -340,7 +340,7 @@ public class OperationQueue {
     }
 
     /**
-     * Returns the count of pending table operation
+     * @return the count of pending table operation
      */
     public int countPending() {
         this.mSyncLock.readLock().lock();
@@ -353,7 +353,7 @@ public class OperationQueue {
     }
 
     /**
-     * Returns the count of pending table operation for a specific table
+     * @return the count of pending table operation for a specific table
      *
      * @param tableName the table name
      * @return the count of operations
@@ -614,14 +614,14 @@ public class OperationQueue {
         }
 
         /**
-         * Returns true if the bookmark is the first and current in the queue
+         * @return true if the bookmark is the first and current in the queue
          */
         public boolean isCurrentBookmark() {
             return this.mOpQueue.isCurrentBookmark(this.mBookmarkQueueItem);
         }
 
         /**
-         * Returns true if the bookmark is canceled
+         * @return true if the bookmark is canceled
          */
         public boolean isCancelled() {
             return this.mBookmarkQueueItem.mCancelled;

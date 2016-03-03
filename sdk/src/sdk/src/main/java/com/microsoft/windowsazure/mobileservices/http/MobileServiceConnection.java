@@ -101,7 +101,6 @@ public class MobileServiceConnection {
      * Execute a request-response operation with a Mobile Service
      *
      * @param request          The request to execute
-     * @param responseCallback Callback to invoke after the request is executed
      */
     public ListenableFuture<ServiceFilterResponse> start(final ServiceFilterRequest request) {
         if (request == null) {

@@ -69,7 +69,7 @@ public final class ExecutableQuery<E> implements Query {
     }
 
     /**
-     * Returns the MobileServiceTable<E> to query
+     * @return the MobileServiceTable<E> to query
      */
     MobileServiceTable<E> getTable() {
         return this.mTable;
@@ -95,7 +95,7 @@ public final class ExecutableQuery<E> implements Query {
      * Executes the query
      *
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link execute()} instead
+     * @deprecated use {@link #execute()} instead
      */
     public void execute(final TableQueryCallback<E> callback) {
         mTable.execute(this, callback);

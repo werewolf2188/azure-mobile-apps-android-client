@@ -24,7 +24,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
 package com.microsoft.windowsazure.mobileservices.table.query;
 
 /**
- * Sort order values
+ * Enumeration of possible sort orderings.
  */
 public enum QueryOrder {
     Ascending, Descending
