@@ -3,7 +3,7 @@ package com.microsoft.windowsazure.mobileservices.table;
 import java.util.Date;
 
 /**
- * Created by marianosanchez on 3/13/15.
+ * Represents a point in time, typically expressed as a date and time of day
  */
 public class DateTimeOffset extends Date {
 

@@ -115,10 +115,9 @@ public class RemoteTableOperationProcessor implements TableOperationVisitor<Json
     }
 
     /**
-     * Returns an instance of a remote table to be used by this processor
+     * @return an instance of a remote table to be used by this processor
      *
      * @param tableName the name of the remote table
-     * @return an instance of a remote table with the given name
      */
     private MobileServiceJsonTable getRemoteTable(String tableName) {
         MobileServiceJsonTable table = this.mClient.getTable(tableName);

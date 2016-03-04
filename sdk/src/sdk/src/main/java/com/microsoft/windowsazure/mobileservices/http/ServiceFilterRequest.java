@@ -32,7 +32,7 @@ import java.net.URISyntaxException;
  */
 public interface ServiceFilterRequest {
     /**
-     * Returns request's Headers
+     * @return request's Headers
      */
     public Headers getHeaders();
 

@@ -54,7 +54,7 @@ public class TestCaseAdapter extends ArrayAdapter<TestCase> {
     }
 
     /**
-     * Returns the view for a specific item on the list
+     * @return the view for a specific item on the list
      */
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {

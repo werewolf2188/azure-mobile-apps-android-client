@@ -91,7 +91,6 @@ public class MobileServiceHttpClient {
      * @param requestHeaders The extra headers to send in the request
      * @param parameters     The query string parameters sent in the request
      * @param features       The features used in the request
-     * @throws java.io.UnsupportedEncodingException If the content cannot be converted into a byte array.
      */
     public ListenableFuture<ServiceFilterResponse> request(String path, String content, String httpMethod,
                                                            List<Pair<String, String>> requestHeaders, List<Pair<String, String>> parameters,

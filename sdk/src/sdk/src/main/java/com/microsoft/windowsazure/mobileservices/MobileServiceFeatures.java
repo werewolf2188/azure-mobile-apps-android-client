@@ -89,11 +89,10 @@ public enum MobileServiceFeatures {
     }
 
     /**
-     * Returns a comma-separated list of feature codes which can be sent to
+     * @return a comma-separated list of feature codes which can be sent to
      * the service in the features header.
      *
      * @param features a set of features
-     * @return a comma-separated list of the feature codes from the given set
      */
     public static String featuresToString(EnumSet<MobileServiceFeatures> features) {
         ArrayList<String> usedFeatures = new ArrayList<String>();

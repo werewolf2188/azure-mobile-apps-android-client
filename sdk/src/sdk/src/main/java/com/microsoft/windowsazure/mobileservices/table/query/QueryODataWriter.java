@@ -31,7 +31,7 @@ import java.util.List;
 public class QueryODataWriter {
 
     /**
-     * Returns the OData string representation of the query
+     * @return the OData string representation of the query
      */
     public static String getRowFilter(Query query) {
         QueryNodeODataWriter oDataWriter = new QueryNodeODataWriter();
@@ -44,7 +44,7 @@ public class QueryODataWriter {
     }
 
     /**
-     * Returns the OData string representation of the rowset's modifiers
+     * @return the OData string representation of the rowset's modifiers
      *
      * @throws java.io.UnsupportedEncodingException
      */

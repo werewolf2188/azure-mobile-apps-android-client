@@ -46,7 +46,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * Represents a Mobile Service Table
+ * Represents a Mobile Service Table, Provides operations on a table for a Mobile Service.
  */
 public final class MobileServiceTable<E> extends MobileServiceTableBase {
 
@@ -114,7 +114,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      *
      * @param callback Callback to invoke when the operation is completed
      * @throws com.microsoft.windowsazure.mobileservices.MobileServiceException
-     * @deprecated use {@link execute()} instead
+     * @deprecated use {@link #execute()} instead
      */
     public void execute(final TableQueryCallback<E> callback) throws MobileServiceException {
 
@@ -232,7 +232,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      *
      * @param query    The MobileServiceQuery instance to execute
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link execute( com.microsoft.windowsazure.mobileservices.table.query.Query query)} instead
+     * @deprecated use {@link #execute( com.microsoft.windowsazure.mobileservices.table.query.Query query)} instead
      */
     public void execute(Query query, final TableQueryCallback<E> callback) {
         ListenableFuture<MobileServiceList<E>> executeFuture = execute(query);
@@ -367,7 +367,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      *
      * @param id       The id of the row
      * @param callback Callback to invoke after the operation is completed
-     * @deprecated use {@link lookUp(Object id)} instead
+     * @deprecated use {@link #lookUp(Object id)} instead
      */
     public void lookUp(Object id, final TableOperationCallback<E> callback) {
         ListenableFuture<E> lookUpFuture = lookUp(id);
@@ -426,8 +426,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      * @param parameters A list of user-defined parameters and values to include in the
      *                   request URI query string
      * @param callback   Callback to invoke after the operation is completed
-     * @deprecated use {@link lookUp(Object id, java.util.List< android.util.Pair<String, String>>
-     * parameters)} instead
+     * @deprecated use {@link #lookUp(Object id, List parameters)} instead
      */
     public void lookUp(Object id, List<Pair<String, String>> parameters, final TableOperationCallback<E> callback) {
         ListenableFuture<E> lookUpFuture = lookUp(id, parameters);
@@ -463,7 +462,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      *
      * @param element  The entity to insert
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link insert(final E element)} instead
+     * @deprecated use {@link #insert(E element)} instead
      */
     public void insert(final E element, final TableOperationCallback<E> callback) {
         this.insert(element, null, callback);
@@ -475,7 +474,6 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      * @param element    The entity to insert
      * @param parameters A list of user-defined parameters and values to include in the
      *                   request URI query string
-     * @param callback   Callback to invoke when the operation is completed
      */
     public ListenableFuture<E> insert(final E element, List<Pair<String, String>> parameters) {
         final SettableFuture<E> future = SettableFuture.create();
@@ -530,8 +528,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      * @param parameters A list of user-defined parameters and values to include in the
      *                   request URI query string
      * @param callback   Callback to invoke when the operation is completed
-     * @deprecated use {@link insert(final E element, java.util.List< android.util.Pair<String, String>>
-     * parameters)} instead
+     * @deprecated use {@link #insert(E element, List parameters)} instead
      */
     public void insert(final E element, List<Pair<String, String>> parameters, final TableOperationCallback<E> callback) {
 
@@ -568,7 +565,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      *
      * @param element  The entity to update
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link update(final E element)} instead
+     * @deprecated use {@link #update(E element)} instead
      */
     public void update(final E element, final TableOperationCallback<E> callback) {
         this.update(element, null, callback);
@@ -580,7 +577,6 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      * @param element    The entity to update
      * @param parameters A list of user-defined parameters and values to include in the
      *                   request URI query string
-     * @param callback   Callback to invoke when the operation is completed
      */
     public ListenableFuture<E> update(final E element, final List<Pair<String, String>> parameters) {
         final SettableFuture<E> future = SettableFuture.create();
@@ -627,8 +623,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      * @param parameters A list of user-defined parameters and values to include in the
      *                   request URI query string
      * @param callback   Callback to invoke when the operation is completed
-     * @deprecated use {@link update(final E element, final java.util.List< android.util.Pair<String,
-     * String>> parameters)} instead
+     * @deprecated use {@link #update(E element, List parameters)} instead
      */
     public void update(final E element, final List<Pair<String, String>> parameters, final TableOperationCallback<E> callback) {
         ListenableFuture<E> updateFuture = update(element, parameters);
@@ -665,7 +660,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      *
      * @param element  The entity to update
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link undelete(final E element)} instead
+     * @deprecated use {@link #undelete(E element)} instead
      */
     public void undelete(final E element, final TableOperationCallback<E> callback) {
         this.undelete(element, null, callback);
@@ -723,8 +718,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      * @param parameters A list of user-defined parameters and values to include in the
      *                   request URI query string
      * @param callback   Callback to invoke when the operation is completed
-     * @deprecated use {@link undelete(final E element, final java.util.List< android.util.Pair<String,
-     * String>> parameters)} instead
+     * @deprecated use {@link #undelete(E element, List parameters)} instead
      */
     public void undelete(final E element, final List<Pair<String, String>> parameters, final TableOperationCallback<E> callback) {
         ListenableFuture<E> undeleteFuture = undelete(element, parameters);
@@ -760,7 +754,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
      *
      * @param element  The JsonObject to delete
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link update(final JsonObject element)} instead
+     * @deprecated use {@link #update(E element)} instead
      */
     public void delete(E element, final TableDeleteCallback callback) {
         this.delete(element, null, callback);
@@ -807,12 +801,10 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
     /**
      * Deletes an entity from a Mobile Service Table using a given id
      *
-     * @param id         The id of the entity to delete
      * @param parameters A list of user-defined parameters and values to include in the
      *                   request URI query string
      * @param callback   Callback to invoke when the operation is completed
-     * @deprecated use {@link delete(Object elementOrId, java.util.List< android.util.Pair<String,
-     * String>> parameters)} instead
+     * @deprecated use {@link #delete(Object elementOrId, List parameters)} instead
      */
     public void delete(final E element, List<Pair<String, String>> parameters, final TableDeleteCallback callback) {
         ListenableFuture<Void> deleteFuture = delete(element, parameters);

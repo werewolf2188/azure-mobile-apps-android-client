@@ -24,46 +24,30 @@ See the Apache Version 2.0 License for specific language governing permissions a
 package com.microsoft.windowsazure.mobileservices.notifications;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.net.Uri;
-import android.preference.PreferenceManager;
 import android.util.Pair;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import com.microsoft.windowsazure.mobileservices.MobileServiceApplication;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
-import com.microsoft.windowsazure.mobileservices.MobileServiceException;
 import com.microsoft.windowsazure.mobileservices.MobileServiceFeatures;
 import com.microsoft.windowsazure.mobileservices.http.HttpConstants;
 import com.microsoft.windowsazure.mobileservices.http.MobileServiceConnection;
 import com.microsoft.windowsazure.mobileservices.http.MobileServiceHttpClient;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 
 /**
- * The notification hub client
+ * MobileServicePush instance facilitates creation/deletion of notification registrations
  */
 public class MobileServicePush {
 
@@ -156,7 +140,7 @@ public class MobileServicePush {
      *
      * @param pnsHandle PNS specific identifier
      * @param callback  The callback to invoke after the Push
-     * @deprecated use {@link register(String pnsHandle)} instead
+     * @deprecated use {@link #register(String pnsHandle)} instead
      */
     public void register(String pnsHandle, final RegistrationCallback callback) {
         ListenableFuture<Void> registerFuture = register(pnsHandle);
@@ -239,8 +223,7 @@ public class MobileServicePush {
      * @param templateName The template name
      * @param template     The template body
      * @param callback     The operation callback
-     * @deprecated use {@link registerTemplate(String pnsHandle, String
-     * templateName, String template)} instead
+     * @deprecated use {@link #registerTemplate(String pnsHandle, String templateName, String template)} instead
      */
     public void registerTemplate(String pnsHandle, String templateName, String template, final RegistrationCallback callback) {
         ListenableFuture<Void> registerFuture = registerTemplate(pnsHandle, templateName, template);
@@ -273,7 +256,7 @@ public class MobileServicePush {
      * Unregisters the client for native notifications
      *
      * @param callback The operation callback
-     * @deprecated use {@link unregister()} instead
+     * @deprecated use {@link #unregister()} instead
      */
     public void unregister(final UnregisterCallback callback) {
         ListenableFuture<Void> deleteInstallationFuture = deleteInstallation();

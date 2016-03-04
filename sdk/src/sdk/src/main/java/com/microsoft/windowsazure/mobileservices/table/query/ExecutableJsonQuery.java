@@ -69,7 +69,7 @@ public final class ExecutableJsonQuery implements Query {
     }
 
     /**
-     * Returns the MobileServiceJsonTable to query
+     * @return the MobileServiceJsonTable to query
      */
     MobileServiceJsonTable getTable() {
         return this.mTable;
@@ -95,7 +95,7 @@ public final class ExecutableJsonQuery implements Query {
      * Executes the query
      *
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link execute()} instead
+     * @deprecated use {@link #execute()} instead
      */
     public void execute(final TableJsonQueryCallback callback) {
         mTable.execute(this, callback);

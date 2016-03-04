@@ -32,7 +32,7 @@ import java.util.Locale;
 public class QuerySQLWriter {
 
     /**
-     * Returns the SQL string representation of the query's select clause
+     * @return the SQL string representation of the query's select clause
      */
     public static String getSelectClause(Query query) {
         String result = "*";
@@ -60,7 +60,7 @@ public class QuerySQLWriter {
     }
 
     /**
-     * Returns the SQL string representation of the query's where clause
+     * @return the SQL string representation of the query's where clause
      */
     public static String getWhereClause(Query query) throws MobileServiceException {
         QueryNodeSQLWriter sqlWriter = new QueryNodeSQLWriter();
@@ -73,7 +73,7 @@ public class QuerySQLWriter {
     }
 
     /**
-     * Returns the SQL string representation of the query's order by clause
+     * @return the SQL string representation of the query's order by clause
      */
     public static String getOrderByClause(Query query) {
         String result = null;
@@ -104,7 +104,7 @@ public class QuerySQLWriter {
     }
 
     /**
-     * Returns the SQL string representation of the query's limit clause
+     * @return the SQL string representation of the query's limit clause
      */
     public static String getLimitClause(Query query) {
         String result = null;

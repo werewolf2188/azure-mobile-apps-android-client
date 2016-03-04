@@ -258,10 +258,9 @@ abstract class MobileServiceTableBase {
     }
 
     /**
-     * Returns the system properties defined or annotated in the entity class
+     * @return the system properties defined or annotated in the entity class
      *
      * @param clazz Target entity class
-     * @return List of entities
      */
     public static <F> EnumSet<MobileServiceSystemProperty> getSystemProperties(Class<F> clazz) {
         EnumSet<MobileServiceSystemProperty> result = EnumSet.noneOf(MobileServiceSystemProperty.class);
@@ -290,7 +289,6 @@ abstract class MobileServiceTableBase {
     }
 
     /**
-     * Returns the system properties on an JsonObject
      *
      * @param instance Target JsonObject
      * @return List of entities
@@ -323,10 +321,9 @@ abstract class MobileServiceTableBase {
     }
 
     /**
-     * Returns the id property class defined or annotated in the entity class
+     * @return the id property class defined or annotated in the entity class
      *
      * @param clazz Target entity class
-     * @return Property class
      */
     protected static <F> Class<?> getIdPropertyClass(Class<F> clazz) {
         // Search for id properties annotations, regardless case
@@ -348,10 +345,9 @@ abstract class MobileServiceTableBase {
     }
 
     /**
-     * Returns the id property class defined or annotated in the entity class
+     * @return the id property class defined or annotated in the entity class
      *
      * @param clazz Target entity class
-     * @return Property class
      */
     protected static <F> boolean isIntegerClass(Class<F> clazz) {
         return clazz.equals(Integer.class) || clazz.equals(Long.class) || clazz.equals(int.class) || clazz.equals(long.class);
@@ -406,14 +402,14 @@ abstract class MobileServiceTableBase {
     }
 
     /**
-     * Returns the name of the represented table
+     * @return the name of the represented table
      */
     public String getTableName() {
         return mTableName;
     }
 
     /**
-     * Returns the client used for table operations
+     * @return the client used for table operations
      */
     protected MobileServiceClient getClient() {
         return mClient;
@@ -433,7 +429,7 @@ abstract class MobileServiceTableBase {
      *
      * @param id       The entity id to delete
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link delete(Object elementOrId)} instead
+     * @deprecated use {@link #delete(Integer Id)} instead
      */
     public void delete(Integer id, TableDeleteCallback callback) {
         this.delete(id.toString(), null, callback);
@@ -464,7 +460,7 @@ abstract class MobileServiceTableBase {
      *
      * @param id       The entity id to delete
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link delete(Object elementOrId)} instead
+     * @deprecated use {@link #delete(Long id)} instead
      */
     public void delete(Long id, TableDeleteCallback callback) {
         this.delete(id.toString(), null, callback);
@@ -495,7 +491,7 @@ abstract class MobileServiceTableBase {
      *
      * @param id       The entity id to delete
      * @param callback Callback to invoke when the operation is completed
-     * @deprecated use {@link delete(Object elementOrId)} instead
+     * @deprecated use {@link #delete(String id)} instead
      */
     public void delete(String id, TableDeleteCallback callback) {
         this.delete(id, null, callback);
@@ -561,8 +557,7 @@ abstract class MobileServiceTableBase {
      * @param parameters A list of user-defined parameters and values to include in the
      *                   request URI query string
      * @param callback   Callback to invoke when the operation is completed
-     * @deprecated use {@link delete(Object elementOrId, java.util.List< android.util.Pair<String,
-     * String>> parameters)} instead
+     * @deprecated use {@link #delete(String id, List parameters)} instead
      */
     public void delete(String id, List<Pair<String, String>> parameters, final TableDeleteCallback callback) {
         ListenableFuture<Void> deleteFuture = delete(id, parameters);
@@ -777,10 +772,9 @@ abstract class MobileServiceTableBase {
     }
 
     /**
-     * Returns the string value represented by the object.
+     * @return the string value represented by the object.
      *
-     * @param o
-     * @return
+     * @param o The object for which the string value is to be extracted
      */
     protected String getStringValue(Object o) {
         String result;
@@ -920,10 +914,9 @@ abstract class MobileServiceTableBase {
     }
 
     /**
-     * Returns the numeric value represented by the object.
+     * @return the numeric value represented by the object.
      *
-     * @param o
-     * @return
+     * @param o the object for which numberic value is to be extracted
      */
     protected long getNumericValue(Object o) {
         long result;

@@ -34,8 +34,6 @@ import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
 import com.microsoft.windowsazure.mobileservices.MobileServiceList;
 import com.microsoft.windowsazure.mobileservices.table.query.Query;
 import com.microsoft.windowsazure.mobileservices.table.serialization.JsonEntityParser;
-import com.microsoft.windowsazure.mobileservices.table.sync.localstore.MobileServiceLocalStoreException;
-import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationError;
 
 import java.util.List;
 
@@ -61,7 +59,7 @@ public class MobileServiceSyncTable<E> {
     }
 
     /**
-     * Returns the name of the represented table
+     * @return the name of the represented table
      */
     public String getName() {
         return mInternalTable.getName();
@@ -70,8 +68,8 @@ public class MobileServiceSyncTable<E> {
     /**
      * Performs a query against the remote table and stores results.
      *
-     * @param query    an optional query to filter results
-     * @param queryKey key to identify the query
+     * @param query   an optional query to filter results
+     * @param queryId id to identify the query
      * @return A ListenableFuture that is done when results have been pulled.
      */
     public ListenableFuture<Void> pull(Query query, String queryId) {

@@ -195,7 +195,7 @@ public class OperationErrorList {
     }
 
     /**
-     * Returns the count of pending table operation errors
+     * @return the count of pending table operation errors
      */
     public int countPending() {
         this.mSyncLock.readLock().lock();
@@ -208,7 +208,7 @@ public class OperationErrorList {
     }
 
     /**
-     * Returns the list of all pending table operation errors
+     * @return the list of all pending table operation errors
      */
     public List<TableOperationError> getAll() {
         this.mSyncLock.readLock().lock();

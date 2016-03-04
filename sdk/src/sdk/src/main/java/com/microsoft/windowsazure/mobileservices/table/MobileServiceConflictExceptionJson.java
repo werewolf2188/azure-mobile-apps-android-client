@@ -19,7 +19,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 
 /**
- * MobileServicePreconditionFailedExceptionJson.java
+ * Provides details of http response with status code of 'Conflict' and server object as Json
  */
 package com.microsoft.windowsazure.mobileservices.table;
 
@@ -37,7 +37,7 @@ public class MobileServiceConflictExceptionJson extends MobileServiceExceptionBa
      * Initializes a new instance of the
      * MobileServiceConflictExceptionJson class.
      *
-     * @param throwable The inner exception.
+     * @param msException The inner exception.
      * @param value     The current instance from server that the conflict occurred for.
      */
     public MobileServiceConflictExceptionJson(MobileServiceException msException, JsonObject value) {

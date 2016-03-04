@@ -48,7 +48,7 @@ public class MobileServiceUser {
     }
 
     /**
-     * Returns the current User Id
+     * @return the current User Id
      */
     public String getUserId() {
         return mUserId;
@@ -64,7 +64,7 @@ public class MobileServiceUser {
     }
 
     /**
-     * Returns the authentication token for the user
+     * @return the authentication token for the user
      */
     public String getAuthenticationToken() {
         return mAuthenticationToken;

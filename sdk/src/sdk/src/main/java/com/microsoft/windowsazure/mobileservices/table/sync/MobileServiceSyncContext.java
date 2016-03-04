@@ -152,18 +152,15 @@ public class MobileServiceSyncContext {
     }
 
     /**
-     * Returns an instance of MobileServiceLocalStore.
-     *
-     * @return The MobileServiceLocalStore instance
+     * @return an instance of MobileServiceLocalStore.
      */
     public MobileServiceLocalStore getStore() {
         return this.mStore;
     }
 
     /**
-     * Returns an instance of MobileServiceSyncHandler.
+     * @return an instance of MobileServiceSyncHandler.
      *
-     * @return The MobileServiceSyncHandler instance
      */
     public MobileServiceSyncHandler getHandler() {
         return this.mHandler;
@@ -354,10 +351,8 @@ public class MobileServiceSyncContext {
     }
 
     /**
-     * Returns the number of pending operations that are not yet pushed to
-     * remote tables.
+     * @return the number of pending operations that are not yet pushed to  remote tables.
      *
-     * @return The number of pending operations
      * @throws Throwable
      */
     public int getPendingOperations() throws Throwable {

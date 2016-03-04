@@ -25,6 +25,9 @@ package com.microsoft.windowsazure.mobileservices.table;
 
 import com.microsoft.windowsazure.mobileservices.MobileServiceException;
 
+/**
+ * Provides details of http response with status code of 'Conflict' and server object
+ */
 public class MobileServiceConflictException extends MobileServiceException {
 
     /**
@@ -39,10 +42,9 @@ public class MobileServiceConflictException extends MobileServiceException {
      * Initializes a new instance of the
      * MobileServiceConflictExceptionJson class.
      *
-     * @param throwable The inner exception.
-     * @param value     The current instance from server that the conflict occurred for.
+     * @param msException The inner exception.
+     * @param item        The current instance from server that the conflict occurred for.
      */
-
     public MobileServiceConflictException(MobileServiceException msException, Object item) {
         super(msException.getMessage(), msException.getCause(), msException.getResponse());
         this.mItem = item;

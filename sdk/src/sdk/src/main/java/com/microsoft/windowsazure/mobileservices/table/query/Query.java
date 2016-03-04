@@ -40,7 +40,7 @@ public interface Query {
     Query deepClone();
 
     /**
-     * Returns the root node of the query
+     * @return the root node of the query
      */
     QueryNode getQueryNode();
 
@@ -52,43 +52,43 @@ public interface Query {
     void setQueryNode(QueryNode queryNode);
 
     /**
-     * Returns true if inline count is requested.
+     * @return true if inline count is requested.
      */
     boolean hasInlineCount();
 
     /**
-     * Returns true if inline count is requested.
+     * @return true if inline count is requested.
      */
     boolean hasDeleted();
 
     /**
-     * Returns a list of fields to order by the results, and their respective
+     * @return a list of fields to order by the results, and their respective
      * ordering direction
      */
     List<Pair<String, QueryOrder>> getOrderBy();
 
     /**
-     * Returns a requested list of projections;
+     * @return a requested list of projections;
      */
     List<String> getProjection();
 
     /**
-     * Returns a list of custom parameters set by the user
+     * @return a list of custom parameters set by the user
      */
     List<Pair<String, String>> getUserDefinedParameters();
 
     /**
-     * Returns a specified top value;
+     * @return a specified top value;
      */
     int getTop();
 
     /**
-     * Returns a specified skip value;
+     * @return a specified skip value;
      */
     int getSkip();
 
     /**
-     * Returns the table name;
+     * @return the table name;
      */
     String getTableName();
 
@@ -223,7 +223,7 @@ public interface Query {
     /**
      * Specifies a byte array value
      *
-     * @param number The string value to use
+     * @param byteArray The byteArray to use
      * @return Query
      */
     Query val(byte[] byteArray);
