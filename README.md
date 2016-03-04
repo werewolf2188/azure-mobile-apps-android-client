@@ -15,7 +15,8 @@ To get the source code of our SDKs and samples via **git** just type:
     cd ./azure-mobile-apps-android-client/
 
 ## Reference Documentation
-- [Android SDK](CHANGELOG.md)
+- [Reference documentation (Java docs)]  (http://azure.github.io/azure-mobile-apps-android-client/)
+- [Change Log](CHANGELOG.md)
 
 ## Android SDK
 Microsoft Azure Mobile Services can be used with an Android-based device using our Android SDK. You can get the Android SDK in one of the following two ways or you can download the source code using the instructions above.
