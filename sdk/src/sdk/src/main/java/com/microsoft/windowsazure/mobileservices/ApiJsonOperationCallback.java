@@ -34,9 +34,9 @@ public interface ApiJsonOperationCallback {
     /**
      * Method to call when the operation is completed
      *
-     * @param jsonObject The obtained jsonElement
+     * @param jsonElement The obtained jsonElement
      * @param exception   An exception representing the error, in case there was one
      * @param response    Response object
      */
-    public void onCompleted(JsonElement jsonObject, Exception exception, ServiceFilterResponse response);
+    public void onCompleted(JsonElement jsonElement, Exception exception, ServiceFilterResponse response);
 }

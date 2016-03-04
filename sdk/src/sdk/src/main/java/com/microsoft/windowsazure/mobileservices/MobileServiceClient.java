@@ -938,7 +938,6 @@ public class MobileServiceClient {
     /**
      * @return a MobileServiceSyncContext instance.
      *
-     * @return the MobileServiceSyncContext instance
      */
     public MobileServiceSyncContext getSyncContext() {
         return this.mSyncContext;
@@ -992,7 +991,6 @@ public class MobileServiceClient {
      * typed data operations for a local table.
      *
      * @param clazz The class used for table name and data serialization
-     * @return The MobileServiceSyncTable instance
      */
     public <E> MobileServiceSyncTable<E> getSyncTable(Class<E> clazz) {
         return this.getSyncTable(clazz.getSimpleName(), clazz);
@@ -1004,7 +1002,6 @@ public class MobileServiceClient {
      *
      * @param name  Table name
      * @param clazz The class used for data serialization
-     * @return The MobileServiceSyncTable instance
      */
     public <E> MobileServiceSyncTable<E> getSyncTable(String name, Class<E> clazz) {
         validateClass(clazz);
@@ -1490,9 +1487,7 @@ public class MobileServiceClient {
     }
 
     /**
-     * Gets the ServiceFilter. If there is no ServiceFilter, it creates and
-     * @return a default filter
-     *
+     * Gets the ServiceFilter. If there is no ServiceFilter, it creates and returns the service.
      * @return ServiceFilter The service filter to use with the client.
      */
     public ServiceFilter getServiceFilter() {
@@ -1604,7 +1599,7 @@ public class MobileServiceClient {
     /**
      * Gets the AndroidHttpClientFactory
      *
-     * @return
+     * @return OkHttp Client Factory
      */
     public OkHttpClientFactory getOkHttpClientFactory() {
         return mOkHttpClientFactory;

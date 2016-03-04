@@ -40,7 +40,6 @@ import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOper
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationCollapser;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationError;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationKind;
-import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationVisitor;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.UpdateOperation;
 
 import java.text.ParseException;
@@ -356,7 +355,6 @@ public class OperationQueue {
      * @return the count of pending table operation for a specific table
      *
      * @param tableName the table name
-     * @return the count of operations
      */
     public int countPending(String tableName) {
         this.mSyncLock.readLock().lock();
