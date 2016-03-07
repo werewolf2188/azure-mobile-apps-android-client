@@ -1,13 +1,17 @@
 # Azure Mobile Services Android SDK Change Log
 
+### Android SDK: Version 3.0.0
+- Update backend API to match Azure App Service Mobile Apps.
+- SDK no longer supports Azure Mobile Services
+
 ### Android SDK: Version 2.0.3
-- Fix in the incremental sync query building logic [#720](https://github.com/Azure/azure-mobile-services/issues/720) to use correct parentheses and skip logic [c58d4e8](https://github.com/Azure/azure-mobile-services/commit/c58d4e8) 
+- Fix in the incremental sync query building logic [#720](https://github.com/Azure/azure-mobile-services/issues/720) to use correct parentheses and skip logic [c58d4e8](https://github.com/Azure/azure-mobile-services/commit/c58d4e8)
 - Fix for the deserialization bug [#718](https://github.com/Azure/azure-mobile-services/issues/718) on OperationErrorList table with datatype mismatch [15e9f9b](https://github.com/Azure/azure-mobile-services/commit/15e9f9b)
 
 ### Android SDK: Version 2.0.2
 - Support for operation state tracking
-- Fix for type incompatibility from datetime to datetimeoffset 
-- Methods added for CancelAndDiscard and CancelAndUpdate for customized conflict handling 
+- Fix for type incompatibility from datetime to datetimeoffset
+- Methods added for CancelAndDiscard and CancelAndUpdate for customized conflict handling
 - Fix for the local store database connection issue caused due to race condition in asynchronous operations
 - Updated end to end test
 - Support for binary data type on queries (for instance to query using the __version column)
@@ -44,4 +48,3 @@
 ### Android SDK: Version 1.1.0
 - Support for tables with string ids
 - Overload for log in which takes the provider as a string, in addition to the one with enums
- 
