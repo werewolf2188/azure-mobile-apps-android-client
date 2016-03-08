@@ -1,5 +1,10 @@
 # Azure Mobile Services Android SDK Change Log
 
+### Android SDK: Version 3.1.0
+- New APIs for handling sync table operation errors
+- New API for Push template Registration
+- Minor bug fixes
+
 ### Android SDK: Version 3.0.0
 - Update backend API to match Azure App Service Mobile Apps.
 - SDK no longer supports Azure Mobile Services
