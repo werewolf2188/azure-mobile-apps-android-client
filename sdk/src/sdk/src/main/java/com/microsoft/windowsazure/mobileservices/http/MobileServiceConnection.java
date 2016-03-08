@@ -72,7 +72,7 @@ public class MobileServiceConnection {
     /**
      * Current SDK version
      */
-    private static final String SDK_VERSION = "3.0.0";
+    private static final String SDK_VERSION = "3.1.0";
     /**
      * The MobileServiceClient used for communication with the Mobile Service
      */
@@ -100,7 +100,7 @@ public class MobileServiceConnection {
     /**
      * Execute a request-response operation with a Mobile Service
      *
-     * @param request          The request to execute
+     * @param request The request to execute
      */
     public ListenableFuture<ServiceFilterResponse> start(final ServiceFilterRequest request) {
         if (request == null) {

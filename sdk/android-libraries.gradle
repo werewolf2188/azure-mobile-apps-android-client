@@ -9,7 +9,7 @@ uploadArchives {
         pom.artifactId = PUBLISH_ARTIFACT_ID
         pom.version = myProject.version
         repository (
-                url: 'https://api.bintray.com/maven/azuremobileservices/SDK/Mobile-Services-Android-SDK'
+                url: 'https://api.bintray.com/maven/microsoftazuremobile/SDK/Mobile-Apps-Android'
         ) {
             authentication(
                     userName: 'bintray username',
@@ -21,13 +21,6 @@ uploadArchives {
 
 task clearJar(type: Delete) {
     delete 'build/release/' + PUBLISH_ARTIFACT_ID + '-' + myProject.version + '.jar'
-}
-
-task makeJarNoVersion(type: Copy) {
-    from('build/intermediates/bundles/release/')
-    into('build/release/')
-    include('classes.jar')
-    rename ('classes.jar', PUBLISH_ARTIFACT_ID + '.jar')
 }
 
 // step 1
