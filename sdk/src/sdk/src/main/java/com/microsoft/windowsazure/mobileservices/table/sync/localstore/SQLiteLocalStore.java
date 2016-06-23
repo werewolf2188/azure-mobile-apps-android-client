@@ -263,7 +263,7 @@ public class SQLiteLocalStore extends SQLiteOpenHelper implements MobileServiceL
 
             int pageSize = maxSize / tableColumnsSize;
 
-            int pageCounts = (itemsCount / pageSize) + 1;
+            int pageCounts = (int) Math.ceil((double)itemsCount / (double)pageSize);
 
             int pendingItems = itemsCount;
 
