@@ -237,7 +237,7 @@ public class LoginManager {
      */
 
     public ListenableFuture<MobileServiceUser> authenticate(String provider, String oAuthToken, HashMap<String, String> parameters) {
-        if (oAuthToken == null || oAuthToken.trim() == "") {
+        if (oAuthToken == null || oAuthToken.trim().isEmpty()) {
             throw new IllegalArgumentException("oAuthToken can not be null or empty");
         }
 
@@ -364,11 +364,11 @@ public class LoginManager {
      * @param callback Callback to invoke when the authentication process finishes
      */
     private void showLoginUIInternal(final String startUrl, final String endUrl, final Context context, LoginUIOperationCallback callback) {
-        if (startUrl == null || startUrl == "") {
+        if (startUrl == null || startUrl.isEmpty()) {
             throw new IllegalArgumentException("startUrl can not be null or empty");
         }
 
-        if (endUrl == null || endUrl == "") {
+        if (endUrl == null || endUrl.isEmpty()) {
             throw new IllegalArgumentException("endUrl can not be null or empty");
         }
 

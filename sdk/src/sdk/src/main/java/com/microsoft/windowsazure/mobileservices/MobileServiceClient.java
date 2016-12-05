@@ -157,7 +157,7 @@ public class MobileServiceClient {
     private static URL normalizeUrl(URL appUrl) {
         URL normalizedAppURL = appUrl;
 
-        if (normalizedAppURL.getPath() == "") {
+        if (normalizedAppURL.getPath().isEmpty()) {
             try {
                 normalizedAppURL = new URL(appUrl.toString() + "/");
             } catch (MalformedURLException e) {

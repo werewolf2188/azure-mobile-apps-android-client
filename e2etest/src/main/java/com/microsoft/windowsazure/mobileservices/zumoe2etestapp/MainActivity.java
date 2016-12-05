@@ -247,7 +247,7 @@ public class MainActivity extends Activity {
                 return true;
 
             case R.id.menu_run_tests:
-                if (getMobileServiceURL().trim() == "") {
+                if (getMobileServiceURL().trim().isEmpty()) {
                     startActivity(new Intent(this, ZumoPreferenceActivity.class));
                 } else {
                     runTests();
