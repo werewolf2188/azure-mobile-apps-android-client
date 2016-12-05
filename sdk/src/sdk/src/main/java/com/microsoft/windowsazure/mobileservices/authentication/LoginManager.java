@@ -130,7 +130,7 @@ public class LoginManager {
      *
      * @param provider   The provider used for the authentication process
      * @param context    The context used to create the authentication dialog
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
     public ListenableFuture<MobileServiceUser> authenticate(String provider, Context context, HashMap<String, String> parameters) {
         final SettableFuture<MobileServiceUser> future = SettableFuture.create();
@@ -204,7 +204,7 @@ public class LoginManager {
      * @param provider   The provider used for the authentication process
      * @param context    The context used to create the authentication dialog
      * @param callback   Callback to invoke when the authentication process finishes
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
     public void authenticate(String provider, Context context, HashMap<String, String> parameters, final UserAuthenticationCallback callback) {
 
@@ -233,7 +233,7 @@ public class LoginManager {
      *
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
 
     public ListenableFuture<MobileServiceUser> authenticate(String provider, String oAuthToken, HashMap<String, String> parameters) {
@@ -289,7 +289,7 @@ public class LoginManager {
      *
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
      */
     public void authenticate(String provider, String oAuthToken, HashMap<String, String> parameters, final UserAuthenticationCallback callback) {
