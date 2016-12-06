@@ -9,7 +9,7 @@ Services cloud backend to [Android apps](http://azure.microsoft.com/en-us/docume
 
 ## Supported Platforms
 
-The current release of the iOS SDK for Azure Mobile Apps supports:
+The current release of the Android SDK for Azure Mobile Apps supports:
 
 * Android releases for API 19 through 24 (KitKat through Nougat)
 
