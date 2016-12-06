@@ -7,6 +7,14 @@ With Microsoft Azure Mobile Apps you can add a scalable backend to your connecte
 If you are new to Mobile Services, you can get started by following our tutorials for connecting your Mobile
 Services cloud backend to [Android apps](http://azure.microsoft.com/en-us/documentation/articles/mobile-services-android-get-started/).
 
+## Supported Platforms
+
+The current release of the Android SDK for Azure Mobile Apps supports:
+
+* Android releases for API 19 through 24 (KitKat through Nougat)
+
+Other platforms may work, but have not been tested.
+
 ## Version Information
 
 There are two major versions of this SDK:
