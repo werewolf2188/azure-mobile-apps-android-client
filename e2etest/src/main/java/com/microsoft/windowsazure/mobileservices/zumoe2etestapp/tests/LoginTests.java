@@ -131,7 +131,7 @@ public class LoginTests extends TestGroup {
                     final Random rndGen = new Random(seed);
 
                     boolean useEnumOverload = rndGen.nextBoolean();
-                    if (true) {
+                    if (useEnumOverload) {
                         log("Calling the overload MobileServiceClient.login(MobileServiceAuthenticationProvider, UserAuthenticationCallback)");
 
                         TestResult result = new TestResult();
