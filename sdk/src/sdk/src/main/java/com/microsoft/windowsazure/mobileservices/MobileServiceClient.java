@@ -29,7 +29,7 @@ import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 import android.content.Context;
-import android.net.Uri;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Pair;
@@ -45,6 +45,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.SerializedName;
+import com.microsoft.windowsazure.mobileservices.authentication.CustomTabsLoginManager;
 import com.microsoft.windowsazure.mobileservices.authentication.LoginManager;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceUser;
@@ -100,6 +101,12 @@ public class MobileServiceClient {
      * Custom API Url
      */
     private static final String CUSTOM_API_URL = "api/";
+
+    /**
+     * Chrome Custom Tabs Login
+     */
+    private CustomTabsLoginManager mCustomTabsLogin;
+
     /**
      * LoginManager used for login methods
      */
@@ -297,6 +304,61 @@ public class MobileServiceClient {
         gsonBuilder.serializeNulls(); // by default, add null serialization
 
         return gsonBuilder;
+    }
+
+    public CustomTabsLoginManager getCustomTabsLoginManager() {
+        return this.mCustomTabsLogin;
+    }
+
+    /**
+     *
+     * @param provider
+     * @param uriScheme
+     * @param authRequestCode
+     */
+    public void login(String provider, String uriScheme, int authRequestCode) {
+        this.mCustomTabsLogin.authenticate(provider, uriScheme, null, mContext, authRequestCode);
+    }
+
+    /**
+     *
+     * @param provider
+     * @param uriScheme
+     * @param authRequestCode
+     */
+    public void login(MobileServiceAuthenticationProvider provider, String uriScheme, int authRequestCode) {
+        this.mCustomTabsLogin.authenticate(provider.toString(), uriScheme, null, mContext, authRequestCode);
+    }
+
+    /**
+     *
+     * @param provider
+     * @param parameters
+     * @param uriScheme
+     * @param authRequestCode
+     */
+    public void login(String provider, HashMap<String, String> parameters, String uriScheme, int authRequestCode) {
+        this.mCustomTabsLogin.authenticate(provider, uriScheme, parameters, mContext, authRequestCode);
+    }
+
+    /**
+     *
+     * @param provider
+     * @param parameters
+     * @param uriScheme
+     * @param authRequestCode
+     */
+    public void login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters, String uriScheme, int authRequestCode) {
+        this.mCustomTabsLogin.authenticate(provider.toString(), uriScheme, parameters, mContext, authRequestCode);
+    }
+
+    /**
+     *
+     * @param data
+     * @return
+     */
+    public static MobileServiceUser onActivityMobileServiceUserResult(Intent data) {
+        return CustomTabsLoginManager.mobileServiceUserOnActivityResult(data);
     }
 
     /**
@@ -1544,6 +1606,7 @@ public class MobileServiceClient {
         mOkHttpClientFactory = okHttpClientFactory;
         mPush = new MobileServicePush(this, context);
         mSyncContext = new MobileServiceSyncContext(this);
+        mCustomTabsLogin = new CustomTabsLoginManager(this, context);
     }
 
     /**
