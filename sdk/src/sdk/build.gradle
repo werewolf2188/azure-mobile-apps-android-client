@@ -23,10 +23,10 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            manifestPlaceholders = ['redirectUriScheme': 'ZumoE2ETestApp://easyauth.callback']
+            manifestPlaceholders = ['redirectUriScheme': '']
         }
         debug {
-            manifestPlaceholders = ['redirectUriScheme': 'ZumoE2ETestApp://easyauth.callback']
+            manifestPlaceholders = ['redirectUriScheme': '']
         }
     }
     lintOptions {
