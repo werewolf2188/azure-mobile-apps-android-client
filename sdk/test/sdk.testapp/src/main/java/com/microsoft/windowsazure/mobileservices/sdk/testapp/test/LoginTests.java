@@ -461,7 +461,7 @@ public class LoginTests extends InstrumentationTestCase {
 
         String paramString = "";
         for (Map.Entry<String, String> parameter : params.entrySet()) {
-            if (paramString == "") {
+            if (paramString.isEmpty()) {
                 paramString = "?";
             } else {
                 paramString += "&";

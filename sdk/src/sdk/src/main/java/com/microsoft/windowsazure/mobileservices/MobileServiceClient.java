@@ -157,7 +157,7 @@ public class MobileServiceClient {
     private static URL normalizeUrl(URL appUrl) {
         URL normalizedAppURL = appUrl;
 
-        if (normalizedAppURL.getPath() == "") {
+        if (normalizedAppURL.getPath().isEmpty()) {
             try {
                 normalizedAppURL = new URL(appUrl.toString() + "/");
             } catch (MalformedURLException e) {
@@ -314,7 +314,7 @@ public class MobileServiceClient {
      * Authentication Provider
      *
      * @param provider   The provider used for the authentication process
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
     public ListenableFuture<MobileServiceUser> login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters) {
         return login(provider.toString(), parameters);
@@ -338,7 +338,7 @@ public class MobileServiceClient {
      * Authentication Provider
      *
      * @param provider   The provider used for the authentication process
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
      * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider)} instead
      */
@@ -361,7 +361,7 @@ public class MobileServiceClient {
      * Authentication Provider
      *
      * @param provider   The provider used for the authentication process
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
     public ListenableFuture<MobileServiceUser> login(String provider, HashMap<String, String> parameters) {
         mLoginInProgress = true;
@@ -407,7 +407,7 @@ public class MobileServiceClient {
      * Authentication Provider
      *
      * @param provider   The provider used for the authentication process
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
      * @deprecated use {@link #login(String provider)} instead
      */
@@ -449,7 +449,7 @@ public class MobileServiceClient {
      *
      * @param provider   The provider used for the authentication process
      * @param oAuthToken A Json object representing the oAuth token used for
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      *                   authentication
      */
     public ListenableFuture<MobileServiceUser> login(MobileServiceAuthenticationProvider provider, JsonObject oAuthToken, HashMap<String, String> parameters) {
@@ -478,7 +478,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param oAuthToken A Json object representing the oAuth token used for
      *                   authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
      * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider, com.google.gson.JsonObject oAuthToken)} instead
      */
@@ -509,7 +509,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param oAuthToken A Json object representing the oAuth token used for
      *                   authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
     public ListenableFuture<MobileServiceUser> login(String provider, JsonObject oAuthToken, HashMap<String, String> parameters) {
         if (oAuthToken == null) {
@@ -542,7 +542,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param oAuthToken A Json object representing the oAuth token used for
      *                   authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
      * @deprecated use {@link #login(String provider, com.google.gson.JsonObject oAuthToken)}
      * instead
@@ -572,7 +572,7 @@ public class MobileServiceClient {
      *
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
     public ListenableFuture<MobileServiceUser> login(MobileServiceAuthenticationProvider provider, String oAuthToken, HashMap<String, String> parameters) {
         return login(provider.toString(), oAuthToken, parameters);
@@ -597,7 +597,7 @@ public class MobileServiceClient {
      *
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
      * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider, String oAuthToken)} instead
      */
@@ -673,7 +673,7 @@ public class MobileServiceClient {
      *
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
      * @deprecated use {@link #login(String provider, String oAuthToken)} instead
      */

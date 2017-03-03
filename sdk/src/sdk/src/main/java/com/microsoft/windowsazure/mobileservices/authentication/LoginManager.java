@@ -130,7 +130,7 @@ public class LoginManager {
      *
      * @param provider   The provider used for the authentication process
      * @param context    The context used to create the authentication dialog
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
     public ListenableFuture<MobileServiceUser> authenticate(String provider, Context context, HashMap<String, String> parameters) {
         final SettableFuture<MobileServiceUser> future = SettableFuture.create();
@@ -204,7 +204,7 @@ public class LoginManager {
      * @param provider   The provider used for the authentication process
      * @param context    The context used to create the authentication dialog
      * @param callback   Callback to invoke when the authentication process finishes
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
     public void authenticate(String provider, Context context, HashMap<String, String> parameters, final UserAuthenticationCallback callback) {
 
@@ -233,11 +233,11 @@ public class LoginManager {
      *
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      */
 
     public ListenableFuture<MobileServiceUser> authenticate(String provider, String oAuthToken, HashMap<String, String> parameters) {
-        if (oAuthToken == null || oAuthToken.trim() == "") {
+        if (oAuthToken == null || oAuthToken.trim().isEmpty()) {
             throw new IllegalArgumentException("oAuthToken can not be null or empty");
         }
 
@@ -289,7 +289,7 @@ public class LoginManager {
      *
      * @param provider   The provider used for the authentication process
      * @param oAuthToken The oAuth token used for authentication
-     * @param parameters Aditional parameters for the authentication process
+     * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
      */
     public void authenticate(String provider, String oAuthToken, HashMap<String, String> parameters, final UserAuthenticationCallback callback) {
@@ -364,11 +364,11 @@ public class LoginManager {
      * @param callback Callback to invoke when the authentication process finishes
      */
     private void showLoginUIInternal(final String startUrl, final String endUrl, final Context context, LoginUIOperationCallback callback) {
-        if (startUrl == null || startUrl == "") {
+        if (startUrl == null || startUrl.isEmpty()) {
             throw new IllegalArgumentException("startUrl can not be null or empty");
         }
 
-        if (endUrl == null || endUrl == "") {
+        if (endUrl == null || endUrl.isEmpty()) {
             throw new IllegalArgumentException("endUrl can not be null or empty");
         }
 

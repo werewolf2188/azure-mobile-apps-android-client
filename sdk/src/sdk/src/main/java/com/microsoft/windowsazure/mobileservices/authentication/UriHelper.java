@@ -52,7 +52,7 @@ class UriHelper {
         if (parameters != null && parameters.size() > 0) {
             for (Map.Entry<String, String> parameter : parameters.entrySet()) {
 
-                if (result == "") {
+                if (result.isEmpty()) {
                     result = "?";
                 } else {
                     result += "&";

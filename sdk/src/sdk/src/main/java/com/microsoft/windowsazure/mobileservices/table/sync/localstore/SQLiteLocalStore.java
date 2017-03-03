@@ -283,7 +283,7 @@ public class SQLiteLocalStore extends SQLiteOpenHelper implements MobileServiceL
 
                 Statement statement = generateUpsertStatement(invTableName, pageItems, fromServer);
 
-                if (fromServer && statement.sql == "")
+                if (fromServer && statement.sql.isEmpty())
                     return;
 
                 SQLiteDatabase db = this.getWritableDatabaseSynchronized();
