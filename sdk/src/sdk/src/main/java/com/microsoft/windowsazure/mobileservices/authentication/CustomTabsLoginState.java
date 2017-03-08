@@ -21,20 +21,38 @@ See the Apache Version 2.0 License for specific language governing permissions a
 package com.microsoft.windowsazure.mobileservices.authentication;
 
 /**
- * CustomTabsLoginState.java
+ * Class for passing login state between {@link CustomTabsLoginActivity} and {@link CustomTabsIntermediateActivity}
  */
 public class CustomTabsLoginState {
 
+    /**
+     * Url scheme used in the redirect url
+     */
     private String mUriScheme;
 
+    /**
+     * Code verifier used in Proof Key of Code Exchange (PKCE) authentication flow
+     */
     private String mCodeVerifier;
 
+    /**
+     * Mobile Service authentication provider
+     */
     private String mAuthenticationProvider;
 
+    /**
+     * Mobile Service app Url
+     */
     private String mAppUrl;
 
+    /**
+     * Prefix for login endpoints. If not set, default to .auth/login
+     */
     private String mLoginUriPrefix;
 
+    /**
+     * Alternate Host URI for login
+     */
     private String mAlternateLoginHost;
 
     public CustomTabsLoginState(String urlScheme, String codeVerifier, String authenticationProvider, String appUrl, String loginUriPrefix, String alternateLoginHost) {
@@ -50,47 +68,23 @@ public class CustomTabsLoginState {
         return mUriScheme;
     }
 
-    public void setUriScheme(String urlScheme) {
-        this.mUriScheme = urlScheme;
-    }
-
     public String getCodeVerifier() {
         return mCodeVerifier;
-    }
-
-    public void setCodeVerifier(String codeVerifier) {
-        this.mCodeVerifier = codeVerifier;
     }
 
     public String getAuthenticationProvider() {
         return mAuthenticationProvider;
     }
 
-    public void setAuthenticationProvider(String authenticationProvider) {
-        this.mAuthenticationProvider = authenticationProvider;
-    }
-
     public String getAppUrl() {
         return mAppUrl;
-    }
-
-    public void setAppUrl(String appUrl) {
-        this.mAppUrl = appUrl;
     }
 
     public String getLoginUriPrefix() {
         return mLoginUriPrefix;
     }
 
-    public void setLoginUriPrefix(String loginUriPrefix) {
-        this.mLoginUriPrefix = loginUriPrefix;
-    }
-
     public String getAlternateLoginHost() {
         return mAlternateLoginHost;
-    }
-
-    public void setAlternateLoginHost(String alternateLoginHost) {
-        this.mAlternateLoginHost = alternateLoginHost;
     }
 }

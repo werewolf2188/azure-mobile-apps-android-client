@@ -39,7 +39,12 @@ import java.util.HashMap;
 import java.net.URL;
 
 /**
- * CustomTabsLoginManager.java
+ * Class for handling Login operations with Authentication Providers
+ * using Chrome Custom Tabs. When Custom Tabs are not available,
+ * a regular browser will be used.
+ * The {@link #authenticate} method abstract
+ * login implementation. The login implementation involves {@link CustomTabsIntermediateActivity}
+ * and {@link CustomTabsLoginActivity}.
  */
 public class CustomTabsLoginManager {
 
@@ -50,37 +55,38 @@ public class CustomTabsLoginManager {
     static final String KEY_LOGIN_INTENT = "LoginIntent";
     static final String KEY_LOGIN_ERROR = "error";
 
-    private static final String EASY_AUTH_LOGIN_URL_FRAGMENT = ".auth/login";
-    private static final String EASY_AUTH_CALLBACK_URL_FRAGMENT = "easyauth.callback";
+    private static final String EASY_AUTH_LOGIN_URL_PATH = ".auth/login";
+    private static final String EASY_AUTH_CALLBACK_URL_PATH = "easyauth.callback";
     private static final String EASY_AUTH_LOGIN_PARAM_REDIRECT_URL = "post_login_redirect_url";
     private static final String EASY_AUTH_LOGIN_PARAM_CODE_CHALLENGE = "code_challenge";
     private static final String EASY_AUTH_LOGIN_PARAM_CODE_CHALLENGE_METHOD = "code_challenge_method";
     private static final String EASY_AUTH_LOGIN_PARAM_CODE_VERIFIER = "code_verifier";
     private static final String EASY_AUTH_LOGIN_PARAM_AUTHORIZATION_CODE = "authorization_code";
-    private static final String EASY_AUTH_AUTHORIZATION_CODE_URL_FRAGMENT = "#authorization_code=";
 
     private static final int CODE_VERIFIER_ENTROPY = 32;
     private static final int MIN_CODE_VERIFIER_LENGTH = 43;
-
     private static final String CODE_CHALLENGE_METHOD_SHA256 = "S256";
 
-    private MobileServiceClient mClient;
+    private String mAppUrl;
+
+    private String mLoginUriPrefix;
+
+    private String mAlternateLoginHost;
 
     private CustomTabsClientHelper mCustomTabsClientHelper;
 
     private boolean mDisposed = false;
 
 
-
-    public CustomTabsLoginManager(MobileServiceClient client, Context context) {
-        if (client == null) {
-            throw new IllegalArgumentException("Invalid Mobile Service Client");
-        }
-        mClient = client;
+    public CustomTabsLoginManager(Context context, String appUrl, String loginUriPrefix, String alternateLoginHost) {
         mCustomTabsClientHelper = new CustomTabsClientHelper(context);
+        mAppUrl = appUrl;
+        mLoginUriPrefix = loginUriPrefix;
+        mAlternateLoginHost = alternateLoginHost;
     }
 
-    public static MobileServiceUser mobileServiceUserOnActivityResult(Intent data) {
+    // Retrieve MobileServiceUser from intent data
+    public static MobileServiceUser getMobileServiceUserFromLoginResult(Intent data) {
         MobileServiceUser user = null;
 
         String userId = data.getStringExtra(KEY_LOGIN_USER_ID);
@@ -97,10 +103,7 @@ public class CustomTabsLoginManager {
     public void authenticate(String provider, String uriScheme, HashMap<String, String> parameters, Context context, int authRequestCode) {
         provider = UriHelper.normalizeProvider(provider);
         String codeVerifier = generateRandomCodeVerifier();
-        String appUrl = mClient.getAppUrl() == null ? null : mClient.getAppUrl().toString();
-        String loginUriPrefix = mClient.getLoginUriPrefix();
-        String alternateLoginHost = mClient.getAlternateLoginHost() == null ? null : mClient.getAlternateLoginHost().toString();
-        CustomTabsLoginState loginState = new CustomTabsLoginState(uriScheme, codeVerifier, provider, appUrl, loginUriPrefix, alternateLoginHost);
+        CustomTabsLoginState loginState = new CustomTabsLoginState(uriScheme, codeVerifier, provider, mAppUrl, mLoginUriPrefix, mAlternateLoginHost);
 
         Uri loginUri = this.buildLoginUri(provider, uriScheme, parameters, codeVerifier);
 
@@ -112,10 +115,9 @@ public class CustomTabsLoginManager {
             return null;
         }
 
-        String alternateLoginHost = mClient.getAlternateLoginHost() != null ? mClient.getAlternateLoginHost().toString() : null;
-        String loginUrl = buildUrlPath(provider, mClient.getAppUrl().toString(), mClient.getLoginUriPrefix(), alternateLoginHost);
+        String loginUrl = buildUrlPath(provider, mAppUrl, mLoginUriPrefix, mAlternateLoginHost);
 
-        String redirectURLString = uriScheme + "://" + EASY_AUTH_CALLBACK_URL_FRAGMENT;
+        String redirectURLString = uriScheme + "://" + EASY_AUTH_CALLBACK_URL_PATH;
 
         String codeChallenge = sha256Base64Encode(codeVerifier);
         if (parameters == null) {
@@ -124,6 +126,10 @@ public class CustomTabsLoginManager {
         parameters.put(EASY_AUTH_LOGIN_PARAM_REDIRECT_URL, redirectURLString);
         parameters.put(EASY_AUTH_LOGIN_PARAM_CODE_CHALLENGE, codeChallenge);
         parameters.put(EASY_AUTH_LOGIN_PARAM_CODE_CHALLENGE_METHOD, CODE_CHALLENGE_METHOD_SHA256);
+
+        // set session_mode to token to work with AppServiceAuthSession cookie
+        // when opened in Chrome Custom Tabs
+        parameters.put("session_mode", "token");
 
         String queryString = UriHelper.normalizeAndUrlEncodeParameters(parameters, MobileServiceClient.UTF8_ENCODING);
 
@@ -136,7 +142,7 @@ public class CustomTabsLoginManager {
         String loginStateJson = new Gson().toJson(loginState);
 
         Intent i = new Intent(context, CustomTabsIntermediateActivity.class);
-        i.putExtra(KEY_LOGIN_INTENT, mCustomTabsClientHelper.createCustomTabsIntentOrFallbackToBrowser(loginUri));
+        i.putExtra(KEY_LOGIN_INTENT, mCustomTabsClientHelper.createLoginIntent(loginUri));
         i.putExtra(KEY_LOGIN_STATE, loginStateJson);
 
         ((Activity) context).startActivityForResult(i, authRequestCode);
@@ -146,8 +152,8 @@ public class CustomTabsLoginManager {
         if (redirectUrl != null && redirectUrl.getScheme() != null
                 && uriScheme != null && redirectUrl.getScheme().toLowerCase().equals(uriScheme.toLowerCase())) {
             // Redirect URL matches url scheme
-            if (redirectUrl.getHost() != null && redirectUrl.getHost().equals(EASY_AUTH_CALLBACK_URL_FRAGMENT)) {
-                // Redirect URL matches "easyauth.callback"
+            if (redirectUrl.getHost() != null && redirectUrl.getHost().equals(EASY_AUTH_CALLBACK_URL_PATH)) {
+                // Redirect URL matches url path
                 return true;
             }
         }
@@ -157,11 +163,13 @@ public class CustomTabsLoginManager {
 
     static String authorizationCodeFromRedirectUrl(Uri redirectUrl) {
 
+        String authorizationCodeQuery = "#" + EASY_AUTH_LOGIN_PARAM_AUTHORIZATION_CODE + "=";
+
         String authorizationCode = null;
         if (redirectUrl != null) {
-            int index = redirectUrl.toString().indexOf(EASY_AUTH_AUTHORIZATION_CODE_URL_FRAGMENT);
+            int index = redirectUrl.toString().indexOf(authorizationCodeQuery);
             if (index >= 0) {
-                authorizationCode = redirectUrl.toString().substring(index + EASY_AUTH_AUTHORIZATION_CODE_URL_FRAGMENT.length());
+                authorizationCode = redirectUrl.toString().substring(index + authorizationCodeQuery.length());
                 try {
                     authorizationCode = URLDecoder.decode(authorizationCode, MobileServiceClient.UTF8_ENCODING);
                 } catch (UnsupportedEncodingException e) {
@@ -180,7 +188,7 @@ public class CustomTabsLoginManager {
         if (loginUriPrefix != null) {
             path = UriHelper.CombinePath(loginUriPrefix, provider);
         } else {
-            path = UriHelper.CombinePath(EASY_AUTH_LOGIN_URL_FRAGMENT, provider);
+            path = UriHelper.CombinePath(EASY_AUTH_LOGIN_URL_PATH, provider);
         }
 
         String url = "";
@@ -210,6 +218,7 @@ public class CustomTabsLoginManager {
         return codeExchangeUrlPath + queryString;
     }
 
+    // SHA-256 hashing followed by Base64 encoding of the string input
     private static String sha256Base64Encode(String input) {
         if (input == null || input.isEmpty()) {
             return null;
@@ -241,6 +250,9 @@ public class CustomTabsLoginManager {
         return base64String;
     }
 
+    /**
+     * Dispose (unbind) custom tabs service when login service is no longer required.
+     */
     public void dispose() {
         if (mDisposed) {
             return;

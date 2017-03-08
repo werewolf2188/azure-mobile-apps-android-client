@@ -29,8 +29,12 @@ import android.support.customtabs.CustomTabsIntent;
 import android.support.customtabs.CustomTabsServiceConnection;
 import android.support.customtabs.CustomTabsSession;
 
+/**
+ * Helper class to establish connection with {@link CustomTabsClient}
+ */
 class CustomTabsClientHelper {
 
+    // Package name of Chrome custom tabs
     private static final String CUSTOM_TABS_PACKAGE_NAME = "com.android.chrome";
 
     private final Context mContext;
@@ -43,7 +47,13 @@ class CustomTabsClientHelper {
         mContext = context;
     }
 
-    Intent createCustomTabsIntentOrFallbackToBrowser(Uri uri) {
+    /**
+     * Create custom tabs login intent from the given uri.
+     * When custom tabs are not available, fallback to browser.
+     * @param uri The given uri
+     * @return The {@link CustomTabsIntent} OR {@code Intent.ACTION_VIEW} intent
+     */
+    Intent createLoginIntent(Uri uri) {
         if (uri == null) {
             return null;
         }

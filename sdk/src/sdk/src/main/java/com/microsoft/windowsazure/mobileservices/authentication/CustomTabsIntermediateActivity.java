@@ -29,6 +29,11 @@ import com.google.gson.Gson;
 
 import static com.microsoft.windowsazure.mobileservices.authentication.CustomTabsLoginManager.*;
 
+/**
+ * Activity working together with {@link CustomTabsLoginActivity} to handle the login flow using
+ * Chrome Custom Tabs or a regular browser. When Chrome Custom Tabs are not available on the device,
+ * fallback to browser. This activity is started by {@link CustomTabsLoginManager} and {@link CustomTabsLoginActivity}.
+ */
 public class CustomTabsIntermediateActivity extends Activity {
 
     private boolean mLoginInProgress = false;
@@ -62,14 +67,18 @@ public class CustomTabsIntermediateActivity extends Activity {
         outState.putString(KEY_LOGIN_ERROR, mErrorMessage);
         outState.putString(KEY_LOGIN_AUTHENTICATION_TOKEN, mAuthenticationToken);
         outState.putParcelable(KEY_LOGIN_INTENT, mLoginIntent);
-
         outState.putString(KEY_LOGIN_STATE, new Gson().toJson(mLoginState));
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        extractState(savedInstanceState);
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        setIntent(intent);
 
         if (intent.getExtras() != null) {
             mUserId = intent.getExtras().getString(KEY_LOGIN_USER_ID);
@@ -83,6 +92,10 @@ public class CustomTabsIntermediateActivity extends Activity {
         super.onResume();
 
         if (!mLoginInProgress) {
+
+            // Validate mLoginIntent and mLoginState is not null and start CustomTabsLoginActivity.
+            // Otherwise, complete the login flow with error.
+
             if (mLoginIntent != null && mLoginState != null) {
                 Intent i = new Intent(this, CustomTabsLoginActivity.class);
 
@@ -94,23 +107,35 @@ public class CustomTabsIntermediateActivity extends Activity {
                 mLoginInProgress = true;
             } else {
                 Intent data = new Intent();
-                data.putExtra(KEY_LOGIN_ERROR, LoginRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
+                data.putExtra(KEY_LOGIN_ERROR, TokenRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
                 setResult(Activity.RESULT_OK, data);
                 finish();
             }
         } else {
             Intent data = new Intent();
+
+            // Validate mUserId and mAuthenticationToken is not null and complete the login flow
+            // with userId and authenticationToken. Otherwise, complete the login flow with error.
+
             if (mUserId != null && mAuthenticationToken != null) {
                 data.putExtra(KEY_LOGIN_USER_ID, mUserId);
                 data.putExtra(KEY_LOGIN_AUTHENTICATION_TOKEN, mAuthenticationToken);
             } else {
-                data.putExtra(KEY_LOGIN_ERROR, mErrorMessage != null ? mErrorMessage : LoginRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
+                data.putExtra(KEY_LOGIN_ERROR, mErrorMessage != null ? mErrorMessage : TokenRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
             }
             setResult(Activity.RESULT_OK, data);
             finish();
         }
     }
 
+    /**
+     * Create an intent with the authenticated MobileService user and an error message
+     * to complete the login flow.
+     * @param context Context of the activity
+     * @param user Authenticated Mobile Service user
+     * @param errorMessage Error message
+     * @return Intent
+     */
     public static Intent createLoginCompletionIntent(Context context, MobileServiceUser user, String errorMessage) {
         Intent intent = new Intent(context, CustomTabsIntermediateActivity.class);
 
@@ -123,7 +148,13 @@ public class CustomTabsIntermediateActivity extends Activity {
             intent.putExtra(KEY_LOGIN_ERROR, errorMessage);
         }
 
-        // TODO: add doc explain why use these flags
+        // Launch CustomTabsIntermediateActivity using two special flags.
+        // (1) FLAG_ACTIVITY_SINGLE_TOP ensures that if there already is an instance of this activity
+        // at the top of stack in the caller task, there would not be any new instance of this activity created.
+        // Instead, an intent will be sent to the current instance through onNewIntent().
+        // (2) FLAG_ACTIVITY_CLEAR_TOP ensures all the other activities on top of this activity
+        // will be closed and this activity will be delivered to the top.
+
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return intent;
     }

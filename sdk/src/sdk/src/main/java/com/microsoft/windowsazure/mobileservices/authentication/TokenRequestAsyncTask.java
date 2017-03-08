@@ -31,7 +31,7 @@ import com.microsoft.windowsazure.mobileservices.http.RequestAsyncTask;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequest;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
 
-class LoginRequestAsyncTask extends RequestAsyncTask {
+class TokenRequestAsyncTask extends RequestAsyncTask {
 
     /**
      * Generic error message for authentication failure
@@ -55,7 +55,7 @@ class LoginRequestAsyncTask extends RequestAsyncTask {
 
     private SettableFuture<MobileServiceUser> mFuture;
 
-    LoginRequestAsyncTask(ServiceFilterRequest request, MobileServiceConnection connection) {
+    TokenRequestAsyncTask(ServiceFilterRequest request, MobileServiceConnection connection) {
         super(request, connection);
         mFuture = SettableFuture.create();
     }

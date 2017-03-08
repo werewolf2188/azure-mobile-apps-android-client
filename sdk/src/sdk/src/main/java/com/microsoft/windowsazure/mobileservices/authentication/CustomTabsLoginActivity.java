@@ -38,13 +38,16 @@ import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequest;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequestImpl;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import static com.microsoft.windowsazure.mobileservices.authentication.CustomTabsLoginManager.*;
 
 /**
- * CustomTabsLoginActivity.java
+ * Activity working together with {@link CustomTabsIntermediateActivity} to handles
+ * the login flow using Chrome Custom Tabs or a regular browser. When Chrome Custom Tabs are not
+ * available on the device, fallback to browser. In the Custom Tabs login flow, this activity instance
+ * is started by {@link CustomTabsIntermediateActivity}. The same instance is started by
+ * {@link RedirectUrlActivity} again in the code exchange process.
  */
 public class CustomTabsLoginActivity extends Activity {
 
@@ -71,7 +74,6 @@ public class CustomTabsLoginActivity extends Activity {
         if (state != null) {
             mLoginInProgress = state.getBoolean(KEY_LOGIN_IN_PROGRESS);
             mLoginIntent = state.getParcelable(KEY_LOGIN_INTENT);
-
             mLoginState = new Gson().fromJson(state.getString(KEY_LOGIN_STATE), CustomTabsLoginState.class);
         }
     }
@@ -84,7 +86,7 @@ public class CustomTabsLoginActivity extends Activity {
         if (redirectUri != null) {
             setIntent(intent);
         } else {
-            finishLoginFlow(this, null, LoginRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
+            finishLoginFlow(null, TokenRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
         }
     }
 
@@ -97,59 +99,85 @@ public class CustomTabsLoginActivity extends Activity {
     }
 
     @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        extractState(savedInstanceState);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 
-        boolean loginFlowShouldFail = true;
+        boolean loginFlowStatus = false;
+
+        // Note that CustomTabsLoginActivity launchmode is singleTask. When this activity starts up
+        // the first time during the login flow, beginLoginFlow() will start the mLoginIntent to
+        // present user with login UI from the authentication provider. The login UI will be opened
+        // in Chrome Custom Tabs if com.chrome.customtabs is available. When EasyAuth server calls
+        // back RedirectUrlActivity with authorization code, this instance of activity will be launched
+        // again. At this time, onNewIntent() will be called following with onResume(). Perform the
+        // code exchange call with the EasyAuth server now to continue the login flow.
 
         if (!mLoginInProgress) {
-            loginFlowShouldFail = beginLoginFlow();
+            loginFlowStatus = beginLoginFlow();
+        } else {
+            loginFlowStatus = exchangeAuthCodeForToken();
         }
 
-        else {
-            try {
-                mClient = new MobileServiceClient(mLoginState.getAppUrl(), this);
-                mClient.setLoginUriPrefix(mLoginState.getLoginUriPrefix());
-                mClient.setAlternateLoginHost(new URL(mLoginState.getAlternateLoginHost()));
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            }
-
-            loginFlowShouldFail = resumeLoginFlowWithCodeExchange();
-        }
-
-        if (loginFlowShouldFail) {
-            finishLoginFlow(this, null, LoginRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
+        if (!loginFlowStatus) {
+            finishLoginFlow(null, TokenRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
         }
     }
 
-    // Begin the login flow - invoke the EasyAuth server login endpoint
-    // If Chrome Custom Tabs are available on this device, a Custom Tab will be launched
-    // to open the login UI. If Chrome Custom Tabs is not available, will fall back to
-    // open in browser.
+    /**
+     * Begin the login flow. Invoke the EasyAuth server login endpoint
+     * If Chrome Custom Tabs are available on this device, a Custom Tab will be launched
+     * to open the login UI. If Chrome Custom Tabs is not available, will fall back to
+     * open in browser.
+     * @return login flow status where false means login failed at this point.
+     */
     private boolean beginLoginFlow() {
+
         if (mLoginIntent != null) {
             startActivity(mLoginIntent);
             mLoginInProgress = true;
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
-    // Finish the login flow - return an authenticated MobileServiceUser back to
-    // the caller if login succeeded. In the event of login failure, errorMessage
-    // provides high level information about the failure.
-    private void finishLoginFlow(Context context, MobileServiceUser user, String errorMessage) {
-        Intent intent = CustomTabsIntermediateActivity.createLoginCompletionIntent(context, user, errorMessage);
+    /**
+     * Finish the login flow. Return an authenticated MobileServiceUser back to
+     * the caller if login succeeded. In the event of login failure, errorMessage
+     * provides high level information about the failure.
+     * @param user Authenticated MobileService user to return
+     * @param errorMessage Error message
+     */
+    private void finishLoginFlow(MobileServiceUser user, String errorMessage) {
+        Intent intent = CustomTabsIntermediateActivity.createLoginCompletionIntent(this, user, errorMessage);
         startActivity(intent);
         finish();
     }
 
-    // Resume the login flow - perform code exchange with the EasyAuth server (Proof Key of Code Exchange)
-    private boolean resumeLoginFlowWithCodeExchange() {
+    /**
+     * Resume the login flow - perform code exchange with the EasyAuth server
+     * @return login flow status where false means login failed at this point
+     */
+    private boolean exchangeAuthCodeForToken() {
+
+        boolean loginFlowStatus = false;
+
+        try {
+            mClient = new MobileServiceClient(mLoginState.getAppUrl(), this);
+            mClient.setLoginUriPrefix(mLoginState.getLoginUriPrefix());
+            URL alternateLoginHost = mLoginState.getAlternateLoginHost() != null ? new URL(mLoginState.getAlternateLoginHost()) : null;
+            mClient.setAlternateLoginHost(alternateLoginHost);
+        } catch (Exception ex) {
+            return false;
+        }
+
         Uri redirectUrl = getIntent().getData();
 
-        boolean loginFlowShouldFail = true;
         if (mLoginState != null && redirectUrl != null) {
 
             if (CustomTabsLoginManager.isRedirectURLValid(redirectUrl, mLoginState.getUriScheme())) {
@@ -161,9 +189,7 @@ public class CustomTabsLoginActivity extends Activity {
                     String codeExchangeUrl = CustomTabsLoginManager.buildCodeExchangeUrl(mLoginState, authorizationCode);
 
                     if (codeExchangeUrl != null) {
-                        loginFlowShouldFail = false;
-
-                        final Context context = this;
+                        loginFlowStatus = true;
 
                         this.performCodeExchange(codeExchangeUrl, new UserAuthenticationCallback() {
 
@@ -176,7 +202,7 @@ public class CustomTabsLoginActivity extends Activity {
                                     }
                                 }
 
-                                finishLoginFlow(context, user, errorMessage);
+                                finishLoginFlow(user, errorMessage);
                             }
                         });
                     }
@@ -184,7 +210,7 @@ public class CustomTabsLoginActivity extends Activity {
             }
         }
 
-        return loginFlowShouldFail;
+        return loginFlowStatus;
     }
 
     protected void performCodeExchange(String codeExchangeUrl, final UserAuthenticationCallback callback) {
@@ -193,7 +219,7 @@ public class CustomTabsLoginActivity extends Activity {
 
         MobileServiceConnection connection = mClient.createConnection();
 
-        LoginRequestAsyncTask task = new LoginRequestAsyncTask(request, connection);
+        TokenRequestAsyncTask task = new TokenRequestAsyncTask(request, connection);
 
         task.executeTask();
 

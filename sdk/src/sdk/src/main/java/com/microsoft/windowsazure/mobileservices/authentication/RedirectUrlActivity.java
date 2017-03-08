@@ -25,6 +25,12 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 
+/**
+ * Activity that receives the redirect url sent by App Service backend.
+ * It launches {@link CustomTabsLoginActivity} with the redirect url.
+ * Developers using this library must override the {@code redirectUriScheme} property
+ * in their {@code build.gradle} to specify the custom scheme to be used for the redirect.
+ */
 public class RedirectUrlActivity extends Activity {
 
     @Override

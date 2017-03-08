@@ -198,7 +198,7 @@ public class LoginTests extends InstrumentationTestCase {
         }
 
         // Assert
-        //assertEquals(buildExpectedUrl(provider, parameters), result.getRequestUrl());
+        assertEquals(buildExpectedUrl(provider, parameters), result.getRequestUrl());
     }
 
     public void testLoginCallbackOperation() throws Throwable {

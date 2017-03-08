@@ -164,17 +164,16 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
         params.put("param1", "value1");
         params.put("param2", "value/2==");
 
-        this.testBuildLoginUri(params, Uri.parse("https://myapp.com/.auth/login/google?post_login_redirect_url=zumoe2etest%3A%2F%2Feasyauth.callback&code_challenge_method=S256&code_challenge=4iF9Pk4SDGozcqGJDwPiMrNa1lnXH3piUBpO4gSj5m0%3D&param1=value1&param2=value%2F2%3D%3D"));
+        this.testBuildLoginUri(params, Uri.parse("https://myapp.com/.auth/login/google?post_login_redirect_url=zumoe2etest%3A%2F%2Feasyauth.callback&session_mode=token&code_challenge_method=S256&code_challenge=4iF9Pk4SDGozcqGJDwPiMrNa1lnXH3piUBpO4gSj5m0%3D&param1=value1&param2=value%2F2%3D%3D"));
     }
 
     public void testBuildLoginUriWithNullParameters() throws Throwable {
 
-        this.testBuildLoginUri(null, Uri.parse("https://myapp.com/.auth/login/google?code_challenge_method=S256&code_challenge=4iF9Pk4SDGozcqGJDwPiMrNa1lnXH3piUBpO4gSj5m0%3D&post_login_redirect_url=zumoe2etest%3A%2F%2Feasyauth.callback"));
+        this.testBuildLoginUri(null, Uri.parse("https://myapp.com/.auth/login/google?code_challenge_method=S256&code_challenge=4iF9Pk4SDGozcqGJDwPiMrNa1lnXH3piUBpO4gSj5m0%3D&post_login_redirect_url=zumoe2etest%3A%2F%2Feasyauth.callback&session_mode=token"));
     }
 
     private void testBuildLoginUri(HashMap<String, String> parameters, Uri expectedUri) throws Throwable {
-        MobileServiceClient mobileServiceClient = new MobileServiceClient(appUrl, getInstrumentation().getContext());
-        CustomTabsLoginManager customTabsLoginManager = new CustomTabsLoginManager(mobileServiceClient, getInstrumentation().getContext());
+        CustomTabsLoginManager customTabsLoginManager = new CustomTabsLoginManager(getInstrumentation().getContext(), appUrl, null, null);
         Method method = CustomTabsLoginManager.class.getDeclaredMethod("buildLoginUri", String.class, String.class, HashMap.class, String.class);
         method.setAccessible(true);
 

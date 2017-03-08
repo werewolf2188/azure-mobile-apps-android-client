@@ -103,7 +103,7 @@ public class MainActivity extends Activity {
 
         String provider = findProviderFromLoginRequestCode(requestCode);
         if (resultCode == RESULT_OK) {
-            MobileServiceUser user = MobileServiceClient.onActivityMobileServiceUserResult(data);
+            MobileServiceUser user = MobileServiceClient.getMobileServiceUserFromLoginResult(data);
             if (user != null) {
                 mClient.setCurrentUser(user);
                 displayResultOnLoginSuccess(provider);
@@ -179,5 +179,11 @@ public class MainActivity extends Activity {
                 throw new IllegalArgumentException("provider is not supported");
         }
         return textViewId;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mClient.getCustomTabsLoginManager().dispose();
     }
 }
