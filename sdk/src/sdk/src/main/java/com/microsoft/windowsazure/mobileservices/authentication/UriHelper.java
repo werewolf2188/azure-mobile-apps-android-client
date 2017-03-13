@@ -33,9 +33,12 @@
  */
 package com.microsoft.windowsazure.mobileservices.authentication;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 class UriHelper {
@@ -101,5 +104,49 @@ class UriHelper {
         //trim all the starting slash
         path2 = path2.replaceAll("^[" + Slash + "]+", "");
         return String.format("%s%c%s", path1, Slash, path2);
+    }
+
+    /**
+     * Normalizes the provider name to match the value required in the mobile
+     * service REST API. For example, WindowsAzureActiveDirectory needs to be
+     * sent as /login/aad.
+     *
+     * @param provider the name of the authentication provider.
+     * @return the normalized provider name.
+     */
+    public static String normalizeProvider(String provider) {
+        if (provider == null || provider.length() == 0) {
+            throw new IllegalArgumentException("provider cannot be null or empty");
+        }
+
+        provider = provider.toLowerCase(Locale.getDefault());
+        if (provider.equalsIgnoreCase(MobileServiceAuthenticationProvider.WindowsAzureActiveDirectory.toString())) {
+            provider = "aad";
+        }
+
+        return provider;
+    }
+
+    public static String normalizeAndUrlEncodeParameters(HashMap<String, String> parameters, String encoding) {
+        String result = "";
+
+        if (parameters != null && parameters.size() > 0) {
+            for (Map.Entry<String, String> parameter : parameters.entrySet()) {
+
+                if (result.isEmpty()) {
+                    result = "?";
+                } else {
+                    result += "&";
+                }
+
+                try {
+                    result += URLEncoder.encode(parameter.getKey(), encoding) + "=" + URLEncoder.encode(parameter.getValue(), encoding);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return result;
     }
 }

@@ -62,6 +62,7 @@ import java.util.Locale;
 /**
  * Class for handling Login operations with Authentication Providers and Microsoft
  * Azure Mobile Services
+ * @deprecated This class implements login based on webview. Use {@link CustomTabsLoginManager} instead.
  */
 @SuppressLint({"SetJavaScriptEnabled"})
 public class LoginManager {
@@ -73,11 +74,7 @@ public class LoginManager {
      * Login process final URL
      */
     private static final String END_URL = ".auth/login/done";
-    /**
-     * The name for the Azure Active Directory authentication provider as used
-     * by the service REST API.
-     */
-    private static final String WINDOWS_AZURE_ACTIVE_DIRECTORY_REST_API_PATH_NAME = "aad";
+
     /**
      * Token indicator for interactive authentication URL
      */
@@ -139,10 +136,10 @@ public class LoginManager {
             throw new IllegalArgumentException("provider cannot be null or empty");
         }
 
-        String path = UriHelper.CombinePath(LoginManager.START_URL, normalizeProvider(provider));
+        String path = UriHelper.CombinePath(LoginManager.START_URL, UriHelper.normalizeProvider(provider));
         String loginAsyncDoneUriFragment = LoginManager.END_URL;
         if (mClient.getLoginUriPrefix() != null) {
-            path = UriHelper.CombinePath(this.mClient.getLoginUriPrefix(), normalizeProvider(provider));
+            path = UriHelper.CombinePath(this.mClient.getLoginUriPrefix(), UriHelper.normalizeProvider(provider));
             loginAsyncDoneUriFragment = UriHelper.CombinePath(this.mClient.getLoginUriPrefix(), "done");
         }
 
@@ -241,9 +238,9 @@ public class LoginManager {
             throw new IllegalArgumentException("oAuthToken can not be null or empty");
         }
 
-        String path = UriHelper.CombinePath(LoginManager.START_URL, normalizeProvider(provider));
+        String path = UriHelper.CombinePath(LoginManager.START_URL, UriHelper.normalizeProvider(provider));
         if (mClient.getLoginUriPrefix() != null) {
-            path = UriHelper.CombinePath(this.mClient.getLoginUriPrefix(), normalizeProvider(provider));
+            path = UriHelper.CombinePath(this.mClient.getLoginUriPrefix(), UriHelper.normalizeProvider(provider));
         }
 
         URL appUrl = UriHelper.createHostOnlyUrl(mClient.getAppUrl());
@@ -313,24 +310,6 @@ public class LoginManager {
     }
 
     /**
-     * Normalizes the provider name to match the value required in the mobile
-     * service REST API. For example, WindowsAzureActiveDirectory needs to be
-     * sent as /login/aad.
-     *
-     * @param provider the name of the authentication provider.
-     * @return the normalized provider name.
-     */
-    private String normalizeProvider(String provider) {
-        if (provider == null || provider.length() == 0) {
-            throw new IllegalArgumentException("provider cannot be null or empty");
-        }
-
-        provider = provider.toLowerCase(Locale.getDefault());
-        if (provider.equalsIgnoreCase(MobileServiceAuthenticationProvider.WindowsAzureActiveDirectory.toString())) {
-            provider = WINDOWS_AZURE_ACTIVE_DIRECTORY_REST_API_PATH_NAME;
-        }
-
-        return provider;
     }
 
     /**

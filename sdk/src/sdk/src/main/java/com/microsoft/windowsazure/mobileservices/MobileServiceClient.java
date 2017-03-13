@@ -29,7 +29,7 @@ import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 import android.content.Context;
-import android.net.Uri;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Pair;
@@ -45,6 +45,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.SerializedName;
+import com.microsoft.windowsazure.mobileservices.authentication.CustomTabsLoginManager;
 import com.microsoft.windowsazure.mobileservices.authentication.LoginManager;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceUser;
@@ -100,6 +101,12 @@ public class MobileServiceClient {
      * Custom API Url
      */
     private static final String CUSTOM_API_URL = "api/";
+
+    /**
+     * Chrome Custom Tabs Login methods
+     */
+    private CustomTabsLoginManager mCustomTabsLoginManager;
+
     /**
      * LoginManager used for login methods
      */
@@ -300,10 +307,96 @@ public class MobileServiceClient {
     }
 
     /**
+     * Return Custom Tabs login manager
+     */
+    public CustomTabsLoginManager getCustomTabsLoginManager() {
+        return mCustomTabsLoginManager;
+    }
+
+    /**
      * Invokes an interactive authentication process using the specified
      * Authentication Provider
      *
      * @param provider The provider used for the authentication process
+     * @param uriScheme The URL scheme of the application
+     * @param authRequestCode The request code that will be returned in onActivityResult() when
+     *                        the login flow completes and activity exits
+     */
+    public void login(String provider, String uriScheme, int authRequestCode) {
+        this.mCustomTabsLoginManager.authenticate(provider, uriScheme, null, mContext, authRequestCode);
+    }
+
+    /**
+     * Invokes an interactive authentication process using the specified
+     * Authentication Provider
+     *
+     * @param provider The provider used for the authentication process
+     * @param uriScheme The URL scheme of the application
+     * @param authRequestCode The request code that will be returned in onActivityResult() when
+     *                        the login flow completes and activity exits
+     */
+    public void login(MobileServiceAuthenticationProvider provider, String uriScheme, int authRequestCode) {
+        this.mCustomTabsLoginManager.authenticate(provider.toString(), uriScheme, null, mContext, authRequestCode);
+    }
+
+    /**
+     * Invokes an interactive authentication process using the specified
+     * Authentication Provider
+     *
+     * @param provider The provider used for the authentication process
+     * @param uriScheme The URL scheme of the application
+     * @param authRequestCode The request code that will be returned in onActivityResult() when
+     *                        the login flow completes and activity exits
+     * @param parameters Additional parameters for the authentication process
+     */
+    public void login(String provider, String uriScheme, int authRequestCode, HashMap<String, String> parameters) {
+        this.mCustomTabsLoginManager.authenticate(provider, uriScheme, parameters, mContext, authRequestCode);
+    }
+
+    /**
+     * Invokes an interactive authentication process using the specified
+     * Authentication Provider
+     *
+     * @param provider The provider used for the authentication process
+     * @param uriScheme The URL scheme of the application
+     * @param authRequestCode The request code that will be returned in onActivityResult() when
+     *                        the login flow completes and activity exits
+     * @param parameters Additional parameters for the authentication process
+     */
+    public void login(MobileServiceAuthenticationProvider provider, String uriScheme, int authRequestCode, HashMap<String, String> parameters) {
+        this.mCustomTabsLoginManager.authenticate(provider.toString(), uriScheme, parameters, mContext, authRequestCode);
+    }
+
+    /**
+     * Helper method which can be used in the onActivityResult() of your activity that started the server-direct login
+     * flow, to retrieve the {@link MobileServiceActivityResult} which contains the login status and the error message
+     * from the login.
+     *
+     * @param data The Intent that returns the login result back to the caller
+     * @return authenticated Mobile Service user
+     */
+    public MobileServiceActivityResult onActivityResult(Intent data) {
+        MobileServiceUser user = null;
+
+        String userId = data.getStringExtra(CustomTabsLoginManager.KEY_LOGIN_USER_ID);
+        String authenticationToken = data.getStringExtra(CustomTabsLoginManager.KEY_LOGIN_AUTHENTICATION_TOKEN);
+
+        if (userId != null && authenticationToken != null) {
+            user = new MobileServiceUser(userId);
+            user.setAuthenticationToken(authenticationToken);
+            mCurrentUser = user;
+            return new MobileServiceActivityResult(true, null);
+        } else {
+            return new MobileServiceActivityResult(false, data.getStringExtra(CustomTabsLoginManager.KEY_LOGIN_ERROR));
+        }
+    }
+
+    /**
+     * Invokes an interactive authentication process using the specified
+     * Authentication Provider
+     *
+     * @param provider The provider used for the authentication process
+     * @deprecated use {@link #login(MobileServiceAuthenticationProvider provider, String uriScheme, int authRequestCode)} instead
      */
     public ListenableFuture<MobileServiceUser> login(MobileServiceAuthenticationProvider provider) {
         return login(provider.toString());
@@ -315,6 +408,7 @@ public class MobileServiceClient {
      *
      * @param provider   The provider used for the authentication process
      * @param parameters Additional parameters for the authentication process
+     * @deprecated use {@link #login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters, String uriScheme, int authRequestCode)} instead
      */
     public ListenableFuture<MobileServiceUser> login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters) {
         return login(provider.toString(), parameters);
@@ -326,7 +420,7 @@ public class MobileServiceClient {
      *
      * @param provider The provider used for the authentication process
      * @param callback Callback to invoke when the authentication process finishes
-     * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider)} instead
+     * @deprecated use {@link #login(MobileServiceAuthenticationProvider provider, String uriScheme, int authRequestCode)} instead
      */
     public void login(MobileServiceAuthenticationProvider provider, UserAuthenticationCallback callback) {
         login(provider.toString(), callback);
@@ -340,7 +434,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link #login( com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider provider)} instead
+     * @deprecated use {@link #login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters, String uriScheme, int authRequestCode)} instead
      */
     public void login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters, UserAuthenticationCallback callback) {
         login(provider.toString(), parameters, callback);
@@ -351,6 +445,7 @@ public class MobileServiceClient {
      * Authentication Provider
      *
      * @param provider The provider used for the authentication process
+     * @deprecated use {@link #login(MobileServiceAuthenticationProvider provider, String uriScheme, int authRequestCode)} instead
      */
     public ListenableFuture<MobileServiceUser> login(String provider) {
         return login(provider, (HashMap<String, String>) null);
@@ -363,7 +458,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param parameters Additional parameters for the authentication process
      */
-    public ListenableFuture<MobileServiceUser> login(String provider, HashMap<String, String> parameters) {
+    private ListenableFuture<MobileServiceUser> login(String provider, HashMap<String, String> parameters) {
         mLoginInProgress = true;
 
         final SettableFuture<MobileServiceUser> resultFuture = SettableFuture.create();
@@ -396,7 +491,7 @@ public class MobileServiceClient {
      *
      * @param provider The provider used for the authentication process
      * @param callback Callback to invoke when the authentication process finishes
-     * @deprecated use {@link #login(String provider)} instead
+     * @deprecated use {@link #login(String provider, String uriScheme, int authRequestCode)} instead
      */
     public void login(String provider, final UserAuthenticationCallback callback) {
         login(provider, (HashMap<String, String>) null, callback);
@@ -409,7 +504,7 @@ public class MobileServiceClient {
      * @param provider   The provider used for the authentication process
      * @param parameters Additional parameters for the authentication process
      * @param callback   Callback to invoke when the authentication process finishes
-     * @deprecated use {@link #login(String provider)} instead
+     * @deprecated use {@link #login(String provider, HashMap<String, String> parameters, String uriScheme, int authRequestCode)} instead
      */
     public void login(String provider, HashMap<String, String> parameters, final UserAuthenticationCallback callback) {
         ListenableFuture<MobileServiceUser> loginFuture = login(provider, parameters);
@@ -1544,6 +1639,10 @@ public class MobileServiceClient {
         mOkHttpClientFactory = okHttpClientFactory;
         mPush = new MobileServicePush(this, context);
         mSyncContext = new MobileServiceSyncContext(this);
+        mCustomTabsLoginManager = new CustomTabsLoginManager(
+                mAppUrl != null ? mAppUrl.toString() : null,
+                mLoginUriPrefix,
+                mAlternateLoginHost != null ? mAlternateLoginHost.toString() : null);
     }
 
     /**

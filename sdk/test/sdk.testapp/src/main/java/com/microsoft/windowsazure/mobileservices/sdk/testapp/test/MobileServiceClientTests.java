@@ -285,7 +285,7 @@ public class MobileServiceClientTests extends InstrumentationTestCase {
         }
     }
 
-    public void testLoginShouldParseJsonUserCorreclty() throws Throwable {
+    public void testLoginShouldParseJsonUserCorrectly() throws Throwable {
 
         final String userId = "id";
         final String userToken = "userToken";
