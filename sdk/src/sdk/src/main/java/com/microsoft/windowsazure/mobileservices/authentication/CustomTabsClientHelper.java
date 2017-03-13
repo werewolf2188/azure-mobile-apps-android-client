@@ -22,8 +22,6 @@ package com.microsoft.windowsazure.mobileservices.authentication;
 
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.support.customtabs.CustomTabsClient;
 import android.support.customtabs.CustomTabsIntent;
 import android.support.customtabs.CustomTabsServiceConnection;
@@ -34,8 +32,10 @@ import android.support.customtabs.CustomTabsSession;
  */
 class CustomTabsClientHelper {
 
-    // Package name of Chrome custom tabs
-    private static final String CUSTOM_TABS_PACKAGE_NAME = "com.android.chrome";
+    /**
+     * Package name of Chrome custom tabs
+     */
+    static final String CUSTOM_TABS_PACKAGE_NAME = "com.android.chrome";
 
     private final Context mContext;
 
@@ -48,37 +48,11 @@ class CustomTabsClientHelper {
     }
 
     /**
-     * Create custom tabs login intent from the given uri.
-     * When custom tabs are not available, fallback to browser.
-     * @param uri The given uri
-     * @return The {@link CustomTabsIntent} OR {@code Intent.ACTION_VIEW} intent
+     * Bind Custom Tabs Service
+     * @param browserPackage package name of Custom Tabs Service
+     * @return true if binding succeeded, false if binding failed OR Custom Tabs Service not available
      */
-    Intent createLoginIntent(Uri uri) {
-        if (uri == null) {
-            return null;
-        }
-
-        Intent intent;
-
-        boolean isCustomTabsSupported = this.bindCustomTabsService(CUSTOM_TABS_PACKAGE_NAME);
-
-        // Use CustomTabsIntent if Custom Tabs is supported on this device.
-        // Fallback to browser when Custom Tabs is not available.
-        if (isCustomTabsSupported) {
-            CustomTabsIntent customTabsIntent = this.createCustomTabsIntentBuilder().build();
-            intent = customTabsIntent.intent;
-            intent.setPackage(CUSTOM_TABS_PACKAGE_NAME);
-            intent.putExtra(CustomTabsIntent.EXTRA_TITLE_VISIBILITY_STATE, CustomTabsIntent.NO_TITLE);
-        } else {
-            intent = new Intent(Intent.ACTION_VIEW);
-        }
-
-        intent.setData(uri);
-
-        return intent;
-    }
-
-    private boolean bindCustomTabsService(String browserPackage) {
+    boolean bindCustomTabsService(String browserPackage) {
         mConnection = new CustomTabsServiceConnection() {
 
             @Override
@@ -97,7 +71,7 @@ class CustomTabsClientHelper {
         return CustomTabsClient.bindCustomTabsService(mContext, browserPackage, mConnection);
     }
 
-    private CustomTabsIntent.Builder createCustomTabsIntentBuilder() {
+    CustomTabsIntent.Builder createCustomTabsIntentBuilder() {
         CustomTabsSession session = null;
         if (mCustomTabsClient != null) {
             session = mCustomTabsClient.newSession(null);
@@ -106,6 +80,9 @@ class CustomTabsClientHelper {
         return new CustomTabsIntent.Builder(session);
     }
 
+    /**
+     * Unbind Custom Tabs Service for garbage collection
+     */
     void unbindCustomTabsService() {
         if (mConnection == null) {
             return;

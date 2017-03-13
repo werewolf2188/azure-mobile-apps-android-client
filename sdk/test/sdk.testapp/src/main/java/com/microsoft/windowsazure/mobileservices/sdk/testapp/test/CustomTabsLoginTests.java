@@ -173,15 +173,15 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
     }
 
     private void testBuildLoginUri(HashMap<String, String> parameters, Uri expectedUri) throws Throwable {
-        CustomTabsLoginManager customTabsLoginManager = new CustomTabsLoginManager(getInstrumentation().getContext(), appUrl, null, null);
-        Method method = CustomTabsLoginManager.class.getDeclaredMethod("buildLoginUri", String.class, String.class, HashMap.class, String.class);
+        Method method = CustomTabsLoginActivity.class.getDeclaredMethod("buildLoginUri", CustomTabsLoginState.class);
         method.setAccessible(true);
 
         String provider = "google";
         String uriScheme = "zumoe2etest";
         String codeVerifier = "67890";
+        CustomTabsLoginState loginState = new CustomTabsLoginState(uriScheme, codeVerifier, provider, appUrl, null, null, parameters);
 
-        assertEquals(expectedUri, (Uri) method.invoke(customTabsLoginManager, provider, uriScheme, parameters, codeVerifier));
+        assertEquals(expectedUri, (Uri) method.invoke(null, loginState));
     }
 
     public void testBuildUrlPathWithLoginUriPrefixAndAlternateLoginHost() throws Throwable {
@@ -210,7 +210,7 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
         Method method = CustomTabsLoginManager.class.getDeclaredMethod("buildCodeExchangeUrl", CustomTabsLoginState.class, String.class);
         method.setAccessible(true);
 
-        CustomTabsLoginState loginState = new CustomTabsLoginState("zumoe2etest", "verifier123", "google", "https://appurl.com", null, null);
+        CustomTabsLoginState loginState = new CustomTabsLoginState("zumoe2etest", "verifier123", "google", "https://appurl.com", null, null, null);
         assertEquals("https://appurl.com/.auth/login/google/token?authorization_code=authcode123&code_verifier=verifier123", method.invoke(null, loginState, "authcode123"));
     }
 
@@ -218,14 +218,14 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
         Method method = CustomTabsLoginManager.class.getDeclaredMethod("buildCodeExchangeUrl", CustomTabsLoginState.class, String.class);
         method.setAccessible(true);
 
-        CustomTabsLoginState loginState = new CustomTabsLoginState("zumoe2etest", "verifier123", "google", "https://appurl.com", ".auth/login/foobar", "https://localhost");
+        CustomTabsLoginState loginState = new CustomTabsLoginState("zumoe2etest", "verifier123", "google", "https://appurl.com", ".auth/login/foobar", "https://localhost", null);
         assertEquals("https://localhost/.auth/login/foobar/google/token?authorization_code=authcode123&code_verifier=verifier123", method.invoke(null, loginState, "authcode123"));
     }
 
     public void testPerformCodeExchange() throws Throwable {
         CustomTabsLoginActivityMock customTabsLoginActivityMock = new CustomTabsLoginActivityMock();
 
-        CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null);
+        CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null, null);
         customTabsLoginActivityMock.setupLoginState(loginState);
 
         final ResultsContainer result = new ResultsContainer();
@@ -268,7 +268,7 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
     public void testPerformCodeExchangeResponseContainsErrorMessage() throws Throwable {
         CustomTabsLoginActivityMock customTabsLoginActivityMock = new CustomTabsLoginActivityMock();
 
-        CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null);
+        CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null, null);
         customTabsLoginActivityMock.setupLoginState(loginState);
 
         final ResultsContainer result = new ResultsContainer();
@@ -311,7 +311,7 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
     public void testPerformCodeExchangeMalformedJsonResponse() throws Throwable {
         CustomTabsLoginActivityMock customTabsLoginActivityMock = new CustomTabsLoginActivityMock();
 
-        CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null);
+        CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null, null);
         customTabsLoginActivityMock.setupLoginState(loginState);
 
         final ResultsContainer result = new ResultsContainer();
@@ -366,7 +366,7 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
     private void testPerformCodeExchangeInvalidJsonResponse(final String jsonResponse, final String expectedErrorMessage) throws Throwable {
         CustomTabsLoginActivityMock customTabsLoginActivityMock = new CustomTabsLoginActivityMock();
 
-        CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null);
+        CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null, null);
         customTabsLoginActivityMock.setupLoginState(loginState);
 
         final ResultsContainer result = new ResultsContainer();

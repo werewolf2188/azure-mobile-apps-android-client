@@ -28,6 +28,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
+import com.microsoft.windowsazure.mobileservices.MobileServiceActivityResult;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceUser;
 
 
@@ -103,22 +104,20 @@ public class MainActivity extends Activity {
 
         String provider = findProviderFromLoginRequestCode(requestCode);
         if (resultCode == RESULT_OK) {
-            MobileServiceUser user = MobileServiceClient.getMobileServiceUserFromLoginResult(data);
-            if (user != null) {
-                mClient.setCurrentUser(user);
-                displayResultOnLoginSuccess(provider);
+            MobileServiceActivityResult result = mClient.onActivityResult(data);
+            if (result.isLoggedIn()) {
+                displayResultOnLoginSuccess(provider, mClient.getCurrentUser());
             } else {
-                String detailedErrorMessage = data.getStringExtra("error");
-                displayMessageLoginFailure(provider, detailedErrorMessage);
+                displayMessageLoginFailure(provider, result.getErrorMessage());
             }
         }
     }
 
-    private void displayResultOnLoginSuccess(String provider) {
+    private void displayResultOnLoginSuccess(String provider, MobileServiceUser user) {
         String text = String.format("%s Login succeeded.\nUserId: %s, authenticationToken: %s",
                 provider,
-                mClient.getCurrentUser().getUserId(),
-                mClient.getCurrentUser().getAuthenticationToken());
+                user.getUserId(),
+                user.getAuthenticationToken());
 
         int textViewId = findTextViewIdFromProvider(provider);
         TextView textView = (TextView) findViewById(textViewId);
@@ -179,11 +178,5 @@ public class MainActivity extends Activity {
                 throw new IllegalArgumentException("provider is not supported");
         }
         return textViewId;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mClient.getCustomTabsLoginManager().dispose();
     }
 }

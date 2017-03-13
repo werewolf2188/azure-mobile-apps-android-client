@@ -44,8 +44,6 @@ public class CustomTabsIntermediateActivity extends Activity {
 
     private String mErrorMessage;
 
-    private Intent mLoginIntent;
-
     private CustomTabsLoginState mLoginState;
 
     @Override
@@ -53,9 +51,9 @@ public class CustomTabsIntermediateActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         if (savedInstanceState == null) {
-            this.extractState(getIntent().getExtras());
+            extractState(getIntent().getExtras());
         } else {
-            this.extractState(savedInstanceState);
+            extractState(savedInstanceState);
         }
     }
 
@@ -66,7 +64,6 @@ public class CustomTabsIntermediateActivity extends Activity {
         outState.putString(KEY_LOGIN_USER_ID, mUserId);
         outState.putString(KEY_LOGIN_ERROR, mErrorMessage);
         outState.putString(KEY_LOGIN_AUTHENTICATION_TOKEN, mAuthenticationToken);
-        outState.putParcelable(KEY_LOGIN_INTENT, mLoginIntent);
         outState.putString(KEY_LOGIN_STATE, new Gson().toJson(mLoginState));
     }
 
@@ -93,13 +90,12 @@ public class CustomTabsIntermediateActivity extends Activity {
 
         if (!mLoginInProgress) {
 
-            // Validate mLoginIntent and mLoginState is not null and start CustomTabsLoginActivity.
+            // Validate mLoginState is not null and start CustomTabsLoginActivity.
             // Otherwise, complete the login flow with error.
 
-            if (mLoginIntent != null && mLoginState != null) {
+            if (mLoginState != null) {
                 Intent i = new Intent(this, CustomTabsLoginActivity.class);
 
-                i.putExtra(KEY_LOGIN_INTENT, mLoginIntent);
                 String loginStateJson = new Gson().toJson(mLoginState);
                 i.putExtra(KEY_LOGIN_STATE, loginStateJson);
                 startActivity(i);
@@ -165,7 +161,6 @@ public class CustomTabsIntermediateActivity extends Activity {
             mUserId = state.getString(KEY_LOGIN_USER_ID);
             mAuthenticationToken = state.getString(KEY_LOGIN_AUTHENTICATION_TOKEN);
             mErrorMessage = state.getString(KEY_LOGIN_ERROR);
-            mLoginIntent = state.getParcelable(KEY_LOGIN_INTENT);
 
             String loginStateJson = state.getString(KEY_LOGIN_STATE);
             mLoginState = new Gson().fromJson(loginStateJson, CustomTabsLoginState.class);

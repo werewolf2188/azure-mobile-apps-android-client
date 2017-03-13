@@ -30,6 +30,19 @@ import android.os.Bundle;
  * It launches {@link CustomTabsLoginActivity} with the redirect url.
  * Developers using this library must override the {@code redirectUriScheme} property
  * in their {@code build.gradle} to specify the custom scheme to be used for the redirect.
+ *
+ * For example, to handle redirect url {@code yourUrlScheme://easyauth.callback}:
+ *
+ * <pre>
+ * {@code
+ * <intent-filter>
+ *   <action android:name="android.intent.action.VIEW"/>
+ *   <category android:name="android.intent.category.DEFAULT"/>
+ *   <category android:name="android.intent.category.BROWSABLE"/>
+ *   <data android:scheme="yourUrlScheme" android:host="easyauth.callback" />
+ * </intent-filter>
+ * }
+ * </pre>
  */
 public class RedirectUrlActivity extends Activity {
 

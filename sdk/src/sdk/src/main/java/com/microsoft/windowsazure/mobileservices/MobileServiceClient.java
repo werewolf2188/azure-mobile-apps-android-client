@@ -344,12 +344,12 @@ public class MobileServiceClient {
      * Authentication Provider
      *
      * @param provider The provider used for the authentication process
-     * @param parameters Additional parameters for the authentication process
      * @param uriScheme The URL scheme of the application
      * @param authRequestCode The request code that will be returned in onActivityResult() when
      *                        the login flow completes and activity exits
+     * @param parameters Additional parameters for the authentication process
      */
-    public void login(String provider, HashMap<String, String> parameters, String uriScheme, int authRequestCode) {
+    public void login(String provider, String uriScheme, int authRequestCode, HashMap<String, String> parameters) {
         this.mCustomTabsLoginManager.authenticate(provider, uriScheme, parameters, mContext, authRequestCode);
     }
 
@@ -358,26 +358,37 @@ public class MobileServiceClient {
      * Authentication Provider
      *
      * @param provider The provider used for the authentication process
-     * @param parameters Additional parameters for the authentication process
      * @param uriScheme The URL scheme of the application
      * @param authRequestCode The request code that will be returned in onActivityResult() when
      *                        the login flow completes and activity exits
+     * @param parameters Additional parameters for the authentication process
      */
-    public void login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters, String uriScheme, int authRequestCode) {
+    public void login(MobileServiceAuthenticationProvider provider, String uriScheme, int authRequestCode, HashMap<String, String> parameters) {
         this.mCustomTabsLoginManager.authenticate(provider.toString(), uriScheme, parameters, mContext, authRequestCode);
     }
 
     /**
-     * Helper method which can be used in the onActivityResult() of your activity which started the
-     * {@link #login(MobileServiceAuthenticationProvider, HashMap, String, int)} or
-     * {@link #login(String, HashMap, String, int)}, to retrieve the
-     * authenticated Mobile Service user from the intent of login result.
+     * Helper method which can be used in the onActivityResult() of your activity that started the server-direct login
+     * flow, to retrieve the {@link MobileServiceActivityResult} which contains the login status and the error message
+     * from the login.
      *
      * @param data The Intent that returns the login result back to the caller
      * @return authenticated Mobile Service user
      */
-    public static MobileServiceUser getMobileServiceUserFromLoginResult(Intent data) {
-        return CustomTabsLoginManager.getMobileServiceUserFromLoginResult(data);
+    public MobileServiceActivityResult onActivityResult(Intent data) {
+        MobileServiceUser user = null;
+
+        String userId = data.getStringExtra(CustomTabsLoginManager.KEY_LOGIN_USER_ID);
+        String authenticationToken = data.getStringExtra(CustomTabsLoginManager.KEY_LOGIN_AUTHENTICATION_TOKEN);
+
+        if (userId != null && authenticationToken != null) {
+            user = new MobileServiceUser(userId);
+            user.setAuthenticationToken(authenticationToken);
+            mCurrentUser = user;
+            return new MobileServiceActivityResult(true, null);
+        } else {
+            return new MobileServiceActivityResult(false, data.getStringExtra(CustomTabsLoginManager.KEY_LOGIN_ERROR));
+        }
     }
 
     /**
@@ -1628,7 +1639,7 @@ public class MobileServiceClient {
         mOkHttpClientFactory = okHttpClientFactory;
         mPush = new MobileServicePush(this, context);
         mSyncContext = new MobileServiceSyncContext(this);
-        mCustomTabsLoginManager = new CustomTabsLoginManager(context,
+        mCustomTabsLoginManager = new CustomTabsLoginManager(
                 mAppUrl != null ? mAppUrl.toString() : null,
                 mLoginUriPrefix,
                 mAlternateLoginHost != null ? mAlternateLoginHost.toString() : null);

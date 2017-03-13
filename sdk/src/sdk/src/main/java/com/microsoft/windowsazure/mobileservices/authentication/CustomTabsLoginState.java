@@ -20,6 +20,8 @@ See the Apache Version 2.0 License for specific language governing permissions a
 
 package com.microsoft.windowsazure.mobileservices.authentication;
 
+import java.util.HashMap;
+
 /**
  * Class for passing login state between {@link CustomTabsLoginActivity} and {@link CustomTabsIntermediateActivity}
  */
@@ -55,13 +57,19 @@ public class CustomTabsLoginState {
      */
     private String mAlternateLoginHost;
 
-    public CustomTabsLoginState(String urlScheme, String codeVerifier, String authenticationProvider, String appUrl, String loginUriPrefix, String alternateLoginHost) {
+    /**
+     * Extra login parameters
+     */
+    private HashMap<String, String> mLoginParameters;
+
+    public CustomTabsLoginState(String urlScheme, String codeVerifier, String authenticationProvider, String appUrl, String loginUriPrefix, String alternateLoginHost, HashMap<String, String> parameters) {
         this.mUriScheme = urlScheme;
         this.mCodeVerifier = codeVerifier;
         this.mAuthenticationProvider = authenticationProvider;
         this.mAppUrl = appUrl;
         this.mLoginUriPrefix = loginUriPrefix;
         this.mAlternateLoginHost = alternateLoginHost;
+        this.mLoginParameters = parameters;
     }
 
     public String getUriScheme() {
@@ -86,5 +94,9 @@ public class CustomTabsLoginState {
 
     public String getAlternateLoginHost() {
         return mAlternateLoginHost;
+    }
+
+    public HashMap<String, String> getLoginParameters() {
+        return mLoginParameters;
     }
 }

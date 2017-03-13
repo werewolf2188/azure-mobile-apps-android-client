@@ -24,8 +24,8 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="zumoe2etestapp"
                     android:host="easyauth.callback"/>
-            </intent-filter>>
-        </activity>>
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

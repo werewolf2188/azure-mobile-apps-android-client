@@ -62,6 +62,7 @@ import java.util.Locale;
 /**
  * Class for handling Login operations with Authentication Providers and Microsoft
  * Azure Mobile Services
+ * @deprecated This class implements login based on webview. Use {@link CustomTabsLoginManager} instead.
  */
 @SuppressLint({"SetJavaScriptEnabled"})
 public class LoginManager {

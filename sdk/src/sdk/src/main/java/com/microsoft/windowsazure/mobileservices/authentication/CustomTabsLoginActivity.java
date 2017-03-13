@@ -21,10 +21,10 @@ See the Apache Version 2.0 License for specific language governing permissions a
 package com.microsoft.windowsazure.mobileservices.authentication;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.customtabs.CustomTabsIntent;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -39,6 +39,7 @@ import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequestImpl;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
 
 import java.net.URL;
+import java.util.HashMap;
 
 import static com.microsoft.windowsazure.mobileservices.authentication.CustomTabsLoginManager.*;
 
@@ -55,13 +56,17 @@ public class CustomTabsLoginActivity extends Activity {
 
     private CustomTabsLoginState mLoginState;
 
-    private Intent mLoginIntent;
-
     private MobileServiceClient mClient;
+
+    private CustomTabsClientHelper mCustomTabsClientHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (mCustomTabsClientHelper == null) {
+            mCustomTabsClientHelper = new CustomTabsClientHelper(this);
+        }
 
         if (savedInstanceState == null) {
             extractState(getIntent().getExtras());
@@ -73,7 +78,6 @@ public class CustomTabsLoginActivity extends Activity {
     private void extractState(Bundle state) {
         if (state != null) {
             mLoginInProgress = state.getBoolean(KEY_LOGIN_IN_PROGRESS);
-            mLoginIntent = state.getParcelable(KEY_LOGIN_INTENT);
             mLoginState = new Gson().fromJson(state.getString(KEY_LOGIN_STATE), CustomTabsLoginState.class);
         }
     }
@@ -94,7 +98,6 @@ public class CustomTabsLoginActivity extends Activity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(KEY_LOGIN_IN_PROGRESS, mLoginInProgress);
-        outState.putParcelable(KEY_LOGIN_INTENT, mLoginIntent);
         outState.putString(KEY_LOGIN_STATE, new Gson().toJson(mLoginState));
     }
 
@@ -105,13 +108,19 @@ public class CustomTabsLoginActivity extends Activity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mCustomTabsClientHelper.unbindCustomTabsService();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 
         boolean loginFlowStatus = false;
 
         // Note that CustomTabsLoginActivity launchmode is singleTask. When this activity starts up
-        // the first time during the login flow, beginLoginFlow() will start the mLoginIntent to
+        // the first time during the login flow, beginLoginFlow() will start the login intent to
         // present user with login UI from the authentication provider. The login UI will be opened
         // in Chrome Custom Tabs if com.chrome.customtabs is available. When EasyAuth server calls
         // back RedirectUrlActivity with authorization code, this instance of activity will be launched
@@ -137,13 +146,76 @@ public class CustomTabsLoginActivity extends Activity {
      * @return login flow status where false means login failed at this point.
      */
     private boolean beginLoginFlow() {
-
-        if (mLoginIntent != null) {
-            startActivity(mLoginIntent);
-            mLoginInProgress = true;
-            return true;
+        if (mLoginState != null) {
+            Uri loginUri = buildLoginUri(mLoginState);
+            if (loginUri != null) {
+                Intent loginIntent = createLoginIntent(loginUri);
+                startActivity(loginIntent);
+                mLoginInProgress = true;
+                return true;
+            }
         }
         return false;
+    }
+
+    private static Uri buildLoginUri(CustomTabsLoginState loginState) {
+        if (loginState == null || loginState.getUriScheme() == null || loginState.getCodeVerifier() == null) {
+            return null;
+        }
+
+        String loginUrl = CustomTabsLoginManager.buildUrlPath(loginState.getAuthenticationProvider(), loginState.getAppUrl(), loginState.getLoginUriPrefix(), loginState.getAlternateLoginHost());
+
+        String redirectURLString = loginState.getUriScheme() + "://" + EASY_AUTH_CALLBACK_URL_SEGMENT;
+
+        String codeChallenge = CustomTabsLoginManager.sha256Base64Encode(loginState.getCodeVerifier());
+        HashMap<String, String> parameters = loginState.getLoginParameters();
+        if (parameters == null) {
+            parameters = new HashMap<>();
+        }
+        parameters.put(EASY_AUTH_LOGIN_PARAM_REDIRECT_URL, redirectURLString);
+        parameters.put(EASY_AUTH_LOGIN_PARAM_CODE_CHALLENGE, codeChallenge);
+        parameters.put(EASY_AUTH_LOGIN_PARAM_CODE_CHALLENGE_METHOD, "S256");
+
+        // set session_mode to token to work with AppServiceAuthSession cookie
+        // when opened in Chrome Custom Tabs
+        parameters.put("session_mode", "token");
+
+        String queryString = UriHelper.normalizeAndUrlEncodeParameters(parameters, MobileServiceClient.UTF8_ENCODING);
+
+        loginUrl = loginUrl + queryString;
+
+        return Uri.parse(loginUrl);
+    }
+
+    /**
+     * Create custom tabs login intent from the given uri.
+     * When custom tabs are not available, fallback to browser.
+     * @param uri The given uri
+     * @return The {@link CustomTabsIntent} OR {@code Intent.ACTION_VIEW} intent
+     */
+    private Intent createLoginIntent(Uri uri) {
+        if (uri == null) {
+            return null;
+        }
+
+        Intent intent;
+
+        boolean isCustomTabsSupported = mCustomTabsClientHelper.bindCustomTabsService(CustomTabsClientHelper.CUSTOM_TABS_PACKAGE_NAME);
+
+        // Use CustomTabsIntent if Custom Tabs is supported on this device.
+        // Fallback to browser when Custom Tabs is not available.
+        if (isCustomTabsSupported) {
+            CustomTabsIntent customTabsIntent = mCustomTabsClientHelper.createCustomTabsIntentBuilder().build();
+            intent = customTabsIntent.intent;
+            intent.setPackage(CustomTabsClientHelper.CUSTOM_TABS_PACKAGE_NAME);
+            intent.putExtra(CustomTabsIntent.EXTRA_TITLE_VISIBILITY_STATE, CustomTabsIntent.NO_TITLE);
+        } else {
+            intent = new Intent(Intent.ACTION_VIEW);
+        }
+
+        intent.setData(uri);
+
+        return intent;
     }
 
     /**
@@ -191,7 +263,7 @@ public class CustomTabsLoginActivity extends Activity {
                     if (codeExchangeUrl != null) {
                         loginFlowStatus = true;
 
-                        this.performCodeExchange(codeExchangeUrl, new UserAuthenticationCallback() {
+                        performCodeExchange(codeExchangeUrl, new UserAuthenticationCallback() {
 
                             @Override
                             public void onCompleted(MobileServiceUser user, Exception exception, ServiceFilterResponse response) {
