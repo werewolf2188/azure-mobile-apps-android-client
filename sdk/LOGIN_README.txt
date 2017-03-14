@@ -4,41 +4,52 @@ Background:
 Diagram illustrates the server login flow using Custom Tabs:
 
  +--------------------------------+             bottom of backstack
- | Initiating Activity            |                     +
- |                                |                     |
+ | (a)Your Activity               |                     +
+ | (launchmode: any)              |                     |
  +--------------------------------+                     |
          |                    ^                         |
          |(1)                 |(7)                      |
          v                    |                         |
- +--------------------------------+                     |
- | CustomTabsIntermediateActivity |                     |
- |                                |                     |
- +--------------------------------+                     |
+ +---------------------------------+                    |
+ |(b)CustomTabsIntermediateActivity|                    |
+ | (launchmode: singleTop)         |                    |
+ +---------------------------------+                    |
          |                    ^                         |
          |(2)                 |(6)                      |
          v                    |                         |
  +--------------------------------+                     |
- | CustomTabsLoginActivity        |                     |
- |                                |                     |
+ | (c)CustomTabsLoginActivity     |                     |
+ | (launchmode: singleTask)       |                     |
  +--------------------------------+                     |
          |                    ^                         |
          |(3)                 |                         |
          v                    |                         |
- +---------------------+      |                         |
- | CustomTabs Activity |      |                         |
- |         OR          |      |                         |
- | Browser Tab Activity|      |(5)                      |
- |                     |      |                         |
- +---------------------+      |                         |
+ +-------------------------+  |                         |
+ | (d2)CustomTabs Activity |  |                         |
+ | (launchmode: outside    |  |                         |
+ |  scope of SDK)          |  |                         |
+ | (d2)Browser Tab Activity|  |(5)                      |
+ |                         |  |                         |
+ +-------------------------+  |                         |
          |                    |                         |
          |(4)                 |                         |
          v                    |                         |
  +--------------------------------+                     |
- | RedirectUrlActivity            |                     |
- |                                |                     V
+ | (e)RedirectUrlActivity         |                     |
+ | (launchmode: default)          |                     V
  +--------------------------------+                 top of backstack
  
  
+ What do activities (a)-(e) mean in the diagram?
+ 
+	(a) YourActivity - This is your activity which uses the Mobile Apps SDK to initiate login
+	(b) CustomTabsIntermediateActivity - This is launched by the SDK as the first step for starting a login flow. We need this because we want to return the result via onActivityResult and CustomTabsLoginActivity cannot return a result using onActivityResult as it is has a launch mode of singleTask (this is an Android restriction). So this activity is used as an intermediate activity in the flow so that we can achieve both - returning result via onActivityResult as well as retaining the singleTask launch mode for CustomTabsLoginAcitivty.
+	(c) CustomTabsLoginActivity - This is launched by CustomTabsIntermediateActivity initially and again later when the  authorization_code is received in the browser OR custom tab. In the former case, it proceeds to step 4 and in the latter case it relaunches the instance of CustomTabsIntermediateActivity in the task stack (use of SINGLE_TOP | CLEAR_TASK flags ensures this).
+	(d1/d2) Chrome Custom Tabs or Browser acitvity - This is not part of the SDK. The SDK launches it and lets the backend perform the login flow. 
+	(e) RedirectUrlActivity - This activity is registered to handle the custom scheme in the AndroidManifest.xml. It is launched when the login flow completes by redirecting to the custom scheme. The only thing this activity does is relaunches CustomTabsLoginActivity and returns.
+
+What do steps (1)-(7) mean in the diagram?
+
 	(1) Your activity initiates the login flow by invoking {@link MobileServiceClient.login(String provider, String urlScheme, int requestCode)}. This will launch {@link CustomTabsIntermediateActivity} atop of your activity.
 	(2) {@link CustomTabsIntermediateActivity} will launch {@link CustomTabsLoginActivity} in singleTask mode. SingleTask mode makes it possible to re-launch the same instance of {@link CustomTabsLoginActivity} later in the flow. {@link CustomTabsLoginActivity} constructs the proper url for login and calls Azure Mobile Apps backend by launching a Chrome CustomTab. If Chrome CustomTab is not available on the device, a regular browser will be launched instead.
 	(3) A native login UI (from the authentication provider) will be presented to the user for username and password. User enters username and password and clicks login button. 

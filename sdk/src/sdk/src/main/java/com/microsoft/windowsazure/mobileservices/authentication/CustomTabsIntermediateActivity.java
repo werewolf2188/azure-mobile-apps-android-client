@@ -88,6 +88,11 @@ public class CustomTabsIntermediateActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
+        // This method is called twice during the server login flow. The first time it is called from
+        // {@link CustomTabsLoginManager.authenticate} to initiate the login flow.
+        // The second time it's called from {@link CustomTabsLoginActivity} to pass login result back
+        // to the caller. mLoginInProgress is used to differentiate the first time from the second time.
+
         if (!mLoginInProgress) {
 
             // Validate mLoginState is not null and start CustomTabsLoginActivity.
@@ -102,6 +107,7 @@ public class CustomTabsIntermediateActivity extends Activity {
 
                 mLoginInProgress = true;
             } else {
+                // error handling
                 Intent data = new Intent();
                 data.putExtra(KEY_LOGIN_ERROR, TokenRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
                 setResult(Activity.RESULT_OK, data);
@@ -117,6 +123,7 @@ public class CustomTabsIntermediateActivity extends Activity {
                 data.putExtra(KEY_LOGIN_USER_ID, mUserId);
                 data.putExtra(KEY_LOGIN_AUTHENTICATION_TOKEN, mAuthenticationToken);
             } else {
+                // error handling
                 data.putExtra(KEY_LOGIN_ERROR, mErrorMessage != null ? mErrorMessage : TokenRequestAsyncTask.AUTHENTICATION_ERROR_MESSAGE);
             }
             setResult(Activity.RESULT_OK, data);
