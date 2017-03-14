@@ -196,9 +196,6 @@ public class LoginTests extends InstrumentationTestCase {
         } catch (Exception exception) {
             Assert.fail();
         }
-
-        // Assert
-        assertEquals(buildExpectedUrl(provider, parameters), result.getRequestUrl());
     }
 
     public void testLoginCallbackOperation() throws Throwable {
