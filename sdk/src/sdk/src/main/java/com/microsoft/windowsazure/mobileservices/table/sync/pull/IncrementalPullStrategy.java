@@ -182,7 +182,15 @@ public class IncrementalPullStrategy extends PullStrategy {
         try {
             return new DateTimeOffset(sdf.parse(stringValue));
         } catch (ParseException e) {
-            return null;
+            try {
+                // Didn't work, trying without ms
+                sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+                return new DateTimeOffset(sdf.parse(stringValue));
+            } catch (ParseException ex) {
+                return null;
+            }
         }
     }
 }
