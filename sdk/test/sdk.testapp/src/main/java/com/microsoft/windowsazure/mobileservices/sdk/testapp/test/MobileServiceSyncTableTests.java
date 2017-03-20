@@ -358,7 +358,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     // // Assert.AreEqual(hijack.Requests.Count, 1); // 1 for push
     // }
 
-    public void testPullSucceds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
+    public void testPullSucceeds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
 
         MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
         ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
@@ -391,7 +391,40 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
                                 "http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27world%27)&$top=3&$skip=5&$orderby=Id%20desc&__includeDeleted=true"));
     }
 
-    public void testPullNoSkipSucceds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
+    public void testPullDateFormatWithoutMillisecondSucceeds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
+
+        MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
+        ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
+
+        MobileServiceClient client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        String updatedAt = sdf.format(new Date());
+
+        client = client.withFilter(getTestFilter(serviceFilterContainer, false,
+                "{\"count\":\"2\",\"results\":[{\"id\":\"abc\",\"String\":\"Hey\",\"updatedAt\":\"" + updatedAt + "\"},{\"id\":\"def\",\"String\":\"World\",\"updatedAt\":\"" + updatedAt + "\"}]}"// remote
+                // item
+        ));
+
+        client.getSyncContext().initialize(store, new SimpleSyncHandler()).get();
+
+        MobileServiceSyncTable<StringIdType> table = client.getSyncTable(StringIdType.class);
+
+        Query query = QueryOperations.tableName(table.getName()).skip(5).top(3).field("String").eq("world").orderBy("Id", QueryOrder.Descending)
+                .includeInlineCount().select("String");
+
+        table.pull(query).get();
+
+        assertEquals(
+                serviceFilterContainer.Requests.get(0).Url,
+                EncodingUtilities
+                        .percentEncodeSpaces(
+                                "http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27world%27)&$top=3&$skip=5&$orderby=Id%20desc&__includeDeleted=true"));
+    }
+
+    public void testPullNoSkipSucceeds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
 
         MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
         ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
@@ -424,7 +457,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
                                 "http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27world%27)&$top=3&$skip=0&$orderby=Id%20desc&__includeDeleted=true"));
     }
 
-    public void testPullSuccedsNoTopNoOrderBy() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
+    public void testPullSucceedsNoTopNoOrderBy() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
 
         MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
         ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
@@ -457,7 +490,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
                                 "http://myapp.com/tables/stringidtype?$filter=String%20eq%20(%27world%27)&$top=50&$skip=0&$orderby=Id%20desc&__includeDeleted=true"));
     }
 
-    public void testIncrementalPullSucceds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
+    public void testIncrementalPullSucceeds() throws MalformedURLException, InterruptedException, ExecutionException, MobileServiceException {
 
         MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
         ServiceFilterContainer serviceFilterContainer = new ServiceFilterContainer();
