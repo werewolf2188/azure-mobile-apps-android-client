@@ -29,10 +29,13 @@ import android.widget.TextView;
 
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
 import com.microsoft.windowsazure.mobileservices.MobileServiceActivityResult;
+import com.microsoft.windowsazure.mobileservices.UserAuthenticationCallback;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceUser;
+import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
 
 
 import java.net.MalformedURLException;
+import java.util.HashMap;
 
 public class MainActivity extends Activity {
 
@@ -62,7 +65,10 @@ public class MainActivity extends Activity {
         googleLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mClient.login("Google", URL_SCHEME, LOGIN_REQUEST_CODE_GOOGLE);
+                // Login with Google with offline permission. Offline permission is required by refresh tokens.
+                HashMap<String, String> parameters = new HashMap<>();
+                parameters.put("access_type", "offline");
+                mClient.login("Google", URL_SCHEME, LOGIN_REQUEST_CODE_GOOGLE, parameters);
             }
         });
 
@@ -78,6 +84,7 @@ public class MainActivity extends Activity {
         msaLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Login with Microsoft. Configure offline permission on azure portal is required by refresh tokens.
                 mClient.login("microsoftaccount", URL_SCHEME, LOGIN_REQUEST_CODE_MSA);
             }
         });
@@ -86,7 +93,10 @@ public class MainActivity extends Activity {
         aadLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mClient.login("AAD", URL_SCHEME, LOGIN_REQUEST_CODE_AAD);
+                // Login with AAD with response_type=code id_token. It is required by refresh tokens.
+                HashMap<String, String> parameters = new HashMap<String, String>();
+                parameters.put("response_type", "code id_token");
+                mClient.login("AAD", URL_SCHEME, LOGIN_REQUEST_CODE_AAD, parameters);
             }
         });
 
@@ -102,31 +112,50 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        String provider = findProviderFromLoginRequestCode(requestCode);
+        final String provider = findProviderFromLoginRequestCode(requestCode);
         if (resultCode == RESULT_OK) {
+
             MobileServiceActivityResult result = mClient.onActivityResult(data);
             if (result.isLoggedIn()) {
-                displayResultOnLoginSuccess(provider, mClient.getCurrentUser());
+
+                // login succeeded
+                final String text = String.format("%s Login succeeded.\nUserId: %s, authenticationToken: %s\n", provider,
+                        mClient.getCurrentUser().getUserId(),
+                        mClient.getCurrentUser().getAuthenticationToken());
+
+                // If authentication provider supports refresh token, run refreshUser tests
+                if (providerSupportsRefreshToken(provider)) {
+
+                    mClient.refreshUser(new UserAuthenticationCallback() {
+                        @Override
+                        public void onCompleted(MobileServiceUser user, Exception exception, ServiceFilterResponse response) {
+                            String text2;
+                            if (user != null && exception == null) {
+                                // refreshUser succeeded
+                                text2 = String.format("%s RefreshUser succeeded.\nUserId: %s, authenticationToken: %s", provider, user.getUserId(), user.getAuthenticationToken());
+                            } else {
+                                // refreshUser failed
+                                text2 = String.format("%s RefreshUser failed.\nError: %s", provider, exception.getMessage());
+                            }
+                            displayText(text + text2, provider);
+                        }
+                    });
+                } else {
+                    displayText(text, provider);
+                }
+
             } else {
-                displayMessageLoginFailure(provider, result.getErrorMessage());
+                // login failed
+                displayText(String.format("%s Login failed.\nError: %s", provider, result.getErrorMessage()), provider);
             }
         }
     }
 
-    private void displayResultOnLoginSuccess(String provider, MobileServiceUser user) {
-        String text = String.format("%s Login succeeded.\nUserId: %s, authenticationToken: %s",
-                provider,
-                user.getUserId(),
-                user.getAuthenticationToken());
-
-        int textViewId = findTextViewIdFromProvider(provider);
-        TextView textView = (TextView) findViewById(textViewId);
-        textView.setText(text);
+    private boolean providerSupportsRefreshToken(String provider) {
+        return provider.equals("Google") || provider.equals("MSA") || provider.equals("AAD");
     }
 
-    private void displayMessageLoginFailure(String provider, String errorMessage) {
-        String text = String.format("%s Login failed.\nError message: %s", provider, errorMessage);
-
+    private void displayText(String text, String provider) {
         int textViewId = findTextViewIdFromProvider(provider);
         TextView textView = (TextView) findViewById(textViewId);
         textView.setText(text);

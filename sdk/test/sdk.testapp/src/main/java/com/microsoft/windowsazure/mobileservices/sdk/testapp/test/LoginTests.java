@@ -45,6 +45,7 @@ import com.squareup.okhttp.internal.http.StatusLine;
 import junit.framework.Assert;
 
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -59,6 +60,192 @@ public class LoginTests extends InstrumentationTestCase {
         appUrl = "http://myapp.com/";
         urlPrefix = ".auth/login/";
         super.setUp();
+    }
+
+    public void testRefreshUserSuccess() throws Throwable {
+        testRefreshUserSetup(null);
+    }
+
+    public void testRefreshUserSuccessWithAlternateLoginHost() throws Throwable {
+        testRefreshUserSetup(new URL("https://www.testalternatelogin.com/"));
+    }
+
+    private void testRefreshUserSetup(URL alternateLoginHost) throws Throwable {
+        final ResultsContainer result = new ResultsContainer();
+
+        // Create client
+        MobileServiceClient client = null;
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        } catch (MalformedURLException e) {
+        }
+
+        final String expectedRefreshRequestUrl = alternateLoginHost != null ? alternateLoginHost.toString() + ".auth/refresh" : appUrl + ".auth/refresh";
+
+        if (alternateLoginHost != null) {
+            client.setAlternateLoginHost(alternateLoginHost);
+        }
+
+        MobileServiceUser user = new MobileServiceUser("123456");
+        user.setAuthenticationToken("old-auth-token");
+        client.setCurrentUser(user);
+
+        // Add a new filter to the client
+        client = client.withFilter(new ServiceFilter() {
+
+            @Override
+            public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+
+                result.setRequestUrl(request.getUrl());
+                assertEquals(expectedRefreshRequestUrl, request.getUrl());
+
+                ServiceFilterResponseMock response = new ServiceFilterResponseMock();
+                response.setContent("{authenticationToken:'new-auth-token', user:{userId:'123456'}}");
+
+                final SettableFuture<ServiceFilterResponse> resultFuture = SettableFuture.create();
+
+                resultFuture.set(response);
+
+                return resultFuture;
+            }
+        });
+
+        user = client.refreshUser().get();
+
+        assertNotNull(user);
+        assertEquals("123456", user.getUserId());
+        assertEquals("new-auth-token", user.getAuthenticationToken());
+    }
+
+    public void testRefreshUserThrowsWhenUserIsNotLoggedIn() throws Throwable {
+
+        // Create client
+        MobileServiceClient client = null;
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        } catch (MalformedURLException e) {
+        }
+
+        MobileServiceUser user = null;
+        try {
+            user = client.refreshUser().get();
+        } catch (Exception ex) {
+            assertNull(user);
+            assertTrue(ex.getCause() instanceof MobileServiceException);
+            assertEquals("MobileServiceUser must be set before calling refresh", ex.getCause().getMessage());
+        }
+    }
+
+    public void testRefreshUserThrowsOn400Error() throws Throwable {
+        testRefreshUserThrowsOnExceptionSetup(400, "Refresh failed with a 400 Bad Request error. The identity provider does not support refresh, or the user is not logged in with sufficient permission.");
+    }
+
+    public void testRefreshUserThrowsOn401Error() throws Throwable {
+        testRefreshUserThrowsOnExceptionSetup(401, "Refresh failed with a 401 Unauthorized error. Credentials are no longer valid.");
+    }
+
+    public void testRefreshUserThrowsOn403Error() throws Throwable {
+        testRefreshUserThrowsOnExceptionSetup(403, "Refresh failed with a 403 Forbidden error. The refresh token was revoked or expired.");
+    }
+
+    public void testRefreshUserThrowsOn500Error() throws Throwable {
+        testRefreshUserThrowsOnExceptionSetup(500, "Refresh failed due to an unexpected error.");
+    }
+
+    private void testRefreshUserThrowsOnExceptionSetup(final int statusCode, String expectedErrorMessage) throws Throwable {
+        final ResultsContainer result = new ResultsContainer();
+
+        // Create client
+        MobileServiceClient client = null;
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        } catch (MalformedURLException e) {
+        }
+
+        MobileServiceUser user = new MobileServiceUser("123456");
+        user.setAuthenticationToken("old-auth-token");
+        client.setCurrentUser(user);
+
+        // Add a new filter to the client
+        client = client.withFilter(new ServiceFilter() {
+
+            @Override
+            public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+
+                result.setRequestUrl(request.getUrl());
+
+                ServiceFilterResponseMock response = new ServiceFilterResponseMock();
+                response.setStatus((new StatusLine(Protocol.HTTP_2, statusCode, "")));
+
+                final SettableFuture<ServiceFilterResponse> resultFuture = SettableFuture.create();
+
+                resultFuture.setException(new MobileServiceException("", response));
+
+                return resultFuture;
+            }
+        });
+
+        try {
+            user = client.refreshUser().get();
+        } catch (Exception ex) {
+            assertEquals(expectedErrorMessage, ex.getCause().getMessage());
+            assertTrue(ex.getCause() instanceof MobileServiceException);
+        }
+    }
+
+    public void testRefreshUserThrowsOnEmptyJsonResponse() throws Throwable {
+        testRefreshUserThrowsOnInvalidJsonResponseSetup("{}");
+    }
+
+    public void testRefreshUserThrowsOnJsonResponseMissingUserId() throws Throwable {
+        testRefreshUserThrowsOnInvalidJsonResponseSetup("{authenticationToken:'123abc', user:{}}");
+    }
+
+    public void testRefreshUserThrowsOnJsonResponseMissingAuthToken() throws Throwable {
+        testRefreshUserThrowsOnInvalidJsonResponseSetup("{user:{userId:'123456'}}");
+    }
+
+    private void testRefreshUserThrowsOnInvalidJsonResponseSetup(final String jsonResponse) {
+        final ResultsContainer result = new ResultsContainer();
+
+        // Create client
+        MobileServiceClient client = null;
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        } catch (MalformedURLException e) {
+        }
+
+
+        MobileServiceUser user = new MobileServiceUser("123456");
+        user.setAuthenticationToken("old-auth-token");
+        client.setCurrentUser(user);
+
+        // Add a new filter to the client
+        client = client.withFilter(new ServiceFilter() {
+
+            @Override
+            public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+
+                result.setRequestUrl(request.getUrl());
+
+                ServiceFilterResponseMock response = new ServiceFilterResponseMock();
+                response.setContent(jsonResponse);
+
+                final SettableFuture<ServiceFilterResponse> resultFuture = SettableFuture.create();
+
+                resultFuture.set(response);
+
+                return resultFuture;
+            }
+        });
+
+        try {
+            user = client.refreshUser().get();
+            Assert.fail();
+        } catch (Exception exception) {
+            assertTrue(exception.getCause() instanceof MobileServiceException);
+            assertEquals("Error on refresh user.", exception.getCause().getMessage());
+        }
     }
 
     public void testLoginOperationWithOAuthToken() throws Throwable {
@@ -308,8 +495,6 @@ public class LoginTests extends InstrumentationTestCase {
 
     private void testLoginShouldThrowError(final MobileServiceAuthenticationProvider provider) throws Throwable {
         final ResultsContainer result = new ResultsContainer();
-        final String errorMessage = "fake error";
-        final String errorJson = "{error:'" + errorMessage + "'}";
 
         // Create client
         MobileServiceClient client = null;
@@ -327,12 +512,11 @@ public class LoginTests extends InstrumentationTestCase {
                 result.setRequestUrl(request.getUrl());
 
                 ServiceFilterResponseMock response = new ServiceFilterResponseMock();
-                response.setContent(errorJson);
                 response.setStatus(new StatusLine(Protocol.HTTP_2, 400, ""));
 
                 final SettableFuture<ServiceFilterResponse> resultFuture = SettableFuture.create();
 
-                resultFuture.set(response);
+                resultFuture.setException(new MobileServiceException("", response));
 
                 return resultFuture;
             }
@@ -343,8 +527,7 @@ public class LoginTests extends InstrumentationTestCase {
             Assert.fail();
         } catch (Exception exception) {
             assertTrue(exception.getCause() instanceof MobileServiceException);
-            MobileServiceException cause = (MobileServiceException) exception.getCause().getCause();
-            assertEquals(errorMessage, cause.getMessage());
+            assertEquals("Error while authenticating user.", exception.getCause().getMessage());
         }
     }
 

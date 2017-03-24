@@ -69,6 +69,11 @@ public class LoginTests extends TestGroup {
         providersWithRecycledTokenSupport.add(MobileServiceAuthenticationProvider.Twitter);
         providersWithRecycledTokenSupport.add(MobileServiceAuthenticationProvider.MicrosoftAccount);
 
+        ArrayList<MobileServiceAuthenticationProvider> providersWithRefreshTokenSupport = new ArrayList<MobileServiceAuthenticationProvider>();
+        providersWithRefreshTokenSupport.add(MobileServiceAuthenticationProvider.Google);
+        providersWithRefreshTokenSupport.add(MobileServiceAuthenticationProvider.WindowsAzureActiveDirectory);
+        providersWithRefreshTokenSupport.add(MobileServiceAuthenticationProvider.MicrosoftAccount);
+
         // Known bug - Drop login via Google token until Google client flow is
         // reintroduced
         // providersWithRecycledTokenSupport.add(MobileServiceAuthenticationProvider.Google);
@@ -76,6 +81,11 @@ public class LoginTests extends TestGroup {
         for (MobileServiceAuthenticationProvider provider : MobileServiceAuthenticationProvider.values()) {
             // basic crud auth test
             this.addTest(createLoginTest(provider));
+
+            if (providersWithRefreshTokenSupport.contains(provider)) {
+                this.addTest(createRefreshUserTest(provider));
+            }
+
             this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
             this.addTest(createLogoutTest());
 
@@ -118,6 +128,50 @@ public class LoginTests extends TestGroup {
         }
     }
 
+    public static TestCase createRefreshUserTest(final MobileServiceAuthenticationProvider provider) {
+        TestCase test = new TestCase(provider.toString() + " RefreshUser") {
+
+            @Override
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+
+                try {
+                    final TestCase testCase = this;
+                    log("Calling the overload MobileServiceClient.refreshUser()");
+
+                    TestResult result = new TestResult();
+                    String userId = "";
+                    String authToken = "";
+
+                    try {
+                        MobileServiceUser user = client.refreshUser().get();
+                        userId = user.getUserId();
+                        authToken = user.getAuthenticationToken();
+                    } catch (Exception exception) {
+                        log("Exception: " + exception.toString());
+                    }
+
+                    log("User " + userId + " refreshed with auth token: " + authToken);
+
+                    MobileServiceUser currentUser = client.getCurrentUser();
+
+                    if (currentUser == null) {
+                        result.setStatus(TestStatus.Failed);
+                    } else {
+                        result.setStatus(TestStatus.Passed);
+                    }
+                    result.setTestCase(testCase);
+
+                    callback.onTestComplete(testCase, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
+                    return;
+                }
+            }
+        };
+
+        return test;
+    }
+
     public static TestCase createLoginTest(final MobileServiceAuthenticationProvider provider) {
         TestCase test = new TestCase(provider.toString() + " Login") {
 
@@ -125,82 +179,53 @@ public class LoginTests extends TestGroup {
             protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
 
                 try {
-                    final TestCase testCase = this;
+                    log("Calling the overload MobileServiceClient.login(MobileServiceAuthenticationProvider provider, HashMap<String, String> parameters)");
 
-                    long seed = new Date().getTime();
-                    final Random rndGen = new Random(seed);
+                    TestResult result = new TestResult();
+                    String userId;
 
-                    boolean useEnumOverload = rndGen.nextBoolean();
-                    if (useEnumOverload) {
-                        log("Calling the overload MobileServiceClient.login(MobileServiceAuthenticationProvider, UserAuthenticationCallback)");
+                    try {
 
-                        TestResult result = new TestResult();
-                        String userName;
+                        HashMap<String, String> parameters = null;
+                        if (provider == MobileServiceAuthenticationProvider.Facebook) {
+                            parameters = new HashMap<>();
 
-                        try {
-
-                            HashMap<String, String> parameters = null;
-                            if (provider == MobileServiceAuthenticationProvider.Facebook) {
-                                parameters = new HashMap<>();
-
-                                parameters.put("display", "popup");
-                            }
-
-                            MobileServiceUser user = client.login(provider, parameters).get();
-                            userName = user.getUserId();
-
-                        } catch (Exception exception) {
-                            userName = "NULL";
-                            log("Error during login, user == null");
-                            log("Exception: " + exception.toString());
-
+                            parameters.put("display", "popup");
+                        }
+                        if (provider == MobileServiceAuthenticationProvider.Google) {
+                            // request offline permission for Google refresh token
+                            parameters = new HashMap<>();
+                            parameters.put("access_type", "offline");
+                        }
+                        if (provider == MobileServiceAuthenticationProvider.WindowsAzureActiveDirectory) {
+                            // request offline permission for AAD refresh token
+                            parameters = new HashMap<>();
+                            parameters.put("response_type", "code id_token");
                         }
 
-                        log("Logged in as " + userName);
+                        MobileServiceUser user = client.login(provider, parameters).get();
+                        userId = user.getUserId();
 
-                        MobileServiceUser currentUser = client.getCurrentUser();
-
-                        if (currentUser == null) {
-                            result.setStatus(TestStatus.Failed);
-                        } else {
-                            result.setStatus(TestStatus.Passed);
-                        }
-                        result.setTestCase(testCase);
-
-                        callback.onTestComplete(testCase, result);
-
-                    } else {
-                        log("Calling the overload MobileServiceClient.login(String, UserAuthenticationCallback)");
-
-                        TestResult result = new TestResult();
-                        String userName;
-
-                        try {
-                            MobileServiceUser user = client.login(provider.toString()).get();
-                            userName = user.getUserId();
-
-                        } catch (Exception exception) {
-                            userName = "NULL";
-                            log("Error during login, user == null");
-                            log("Exception: " + exception.toString());
-
-                        }
-
-                        log("Logged in as " + userName);
-
-                        MobileServiceUser currentUser = client.getCurrentUser();
-
-                        if (currentUser == null) {
-                            result.setStatus(TestStatus.Failed);
-                        } else {
-                            result.setStatus(TestStatus.Passed);
-                        }
-
-                        result.setTestCase(testCase);
-
-                        callback.onTestComplete(testCase, result);
+                    } catch (Exception exception) {
+                        userId = "NULL";
+                        log("Error during login, user == null");
+                        log("Exception: " + exception.toString());
 
                     }
+
+                    log("Logged in as " + userId);
+
+                    MobileServiceUser currentUser = client.getCurrentUser();
+
+                    if (currentUser == null) {
+                        result.setStatus(TestStatus.Failed);
+                    } else {
+                        result.setStatus(TestStatus.Passed);
+                    }
+                    result.setTestCase(this);
+
+                    callback.onTestComplete(this, result);
+
                 } catch (Exception e) {
                     callback.onTestComplete(this, createResultFromException(e));
                     return;
