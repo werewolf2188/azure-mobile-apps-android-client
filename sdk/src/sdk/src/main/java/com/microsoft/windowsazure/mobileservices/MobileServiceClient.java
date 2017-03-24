@@ -314,6 +314,22 @@ public class MobileServiceClient {
     }
 
     /**
+     * Refreshes access token with the identity provider for the logged in user.
+     * @return Refreshed Mobile Service user
+     */
+    public ListenableFuture<MobileServiceUser> refreshUser() {
+        return mLoginManager.refreshUser();
+    }
+
+    /**
+     * Refreshes access token with the identity provider for the logged in user.
+     * @param callback The callback to invoke when the authentication process finishes
+     */
+    public void refreshUser(final UserAuthenticationCallback callback) {
+        mLoginManager.refreshUser(callback);
+    }
+
+    /**
      * Invokes an interactive authentication process using the specified
      * Authentication Provider
      *

@@ -57,7 +57,6 @@ import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.HashMap;
-import java.util.Locale;
 
 /**
  * Class for handling Login operations with Authentication Providers and Microsoft
@@ -73,7 +72,10 @@ public class LoginManager {
      * Login process final URL
      */
     private static final String END_URL = ".auth/login/done";
-
+    /**
+     * Refresh user URL
+     */
+    private static final String REFRESH_USER_URL = ".auth/refresh";
     /**
      * Token indicator for interactive authentication URL
      */
@@ -106,6 +108,104 @@ public class LoginManager {
         }
 
         mClient = client;
+    }
+
+    /**
+     * Refreshes access token with the identity provider for the logged in user.
+     * @param callback The callback to invoke when the authentication process finishes
+     */
+    public void refreshUser(final UserAuthenticationCallback callback) {
+
+        ListenableFuture<MobileServiceUser> future = refreshUser();
+
+        Futures.addCallback(future, new FutureCallback<MobileServiceUser>() {
+            @Override
+            public void onSuccess(MobileServiceUser user) {
+                callback.onCompleted(user, null, null);
+            }
+
+            @Override
+            public void onFailure(Throwable exception) {
+                if (exception instanceof Exception) {
+                    callback.onCompleted(null, (Exception) exception, MobileServiceException.getServiceResponse(exception));
+                } else {
+                    callback.onCompleted(null, new Exception(exception), MobileServiceException.getServiceResponse(exception));
+                }
+            }
+        });
+    }
+
+    /**
+     * Refreshes access token with the identity provider for the logged in user.
+     * @return Refreshed Mobile Service user
+     */
+    public ListenableFuture<MobileServiceUser> refreshUser() {
+
+        final SettableFuture<MobileServiceUser> future = SettableFuture.create();
+
+        if (mClient.getCurrentUser() == null || mClient.getCurrentUser().getUserId() == null) {
+            future.setException(new MobileServiceException("MobileServiceUser must be set before calling refresh"));
+            return future;
+        }
+
+        URL appUrl = UriHelper.createHostOnlyUrl(mClient.getAppUrl());
+
+        String url = UriHelper.CombinePath(appUrl.toString(), REFRESH_USER_URL);
+
+        if (this.mClient.getAlternateLoginHost() != null) {
+            url = UriHelper.CombinePath(mClient.getAlternateLoginHost().toString(), REFRESH_USER_URL);
+        }
+
+        // Create a request
+        final ServiceFilterRequest request =
+                ServiceFilterRequestImpl.get(mClient.getOkHttpClientFactory(), url);
+
+        final MobileServiceConnection connection = mClient.createConnection();
+
+        // Create the AsyncTask that will execute the request
+        new RequestAsyncTask(request, connection) {
+            @Override
+            protected void onPostExecute(ServiceFilterResponse response) {
+                if (mTaskException == null && response != null) {
+                    MobileServiceUser user;
+                    try {
+                        // Get the user from the response and create a
+                        // MobileServiceUser object from the JSON
+                        String content = response.getContent();
+                        user = createUserFromJSON((JsonObject) new JsonParser().parse((content.trim())));
+                        mClient.setCurrentUser(user);
+                    } catch (Exception e) {
+                        future.setException(new MobileServiceException("Error on refresh user.", e, response));
+                        return;
+                    }
+
+                    future.set(user);
+                } else {
+                    if (mTaskException != null && mTaskException.getResponse() != null && mTaskException.getResponse().getStatus() != null) {
+                        String message;
+                        switch (mTaskException.getResponse().getStatus().code) {
+                            case 400:
+                                message = "Refresh failed with a 400 Bad Request error. The identity provider does not support refresh, or the user is not logged in with sufficient permission.";
+                                break;
+                            case 401:
+                                message = "Refresh failed with a 401 Unauthorized error. Credentials are no longer valid.";
+                                break;
+                            case 403:
+                                message = "Refresh failed with a 403 Forbidden error. The refresh token was revoked or expired.";
+                                break;
+                            default:
+                                message = "Refresh failed due to an unexpected error.";
+                                break;
+                        }
+                        future.setException(new MobileServiceException(message, mTaskException));
+                    } else {
+                        future.setException(new MobileServiceException("Error on refresh user."));
+                    }
+                }
+            }
+        }.executeTask();
+
+        return future;
     }
 
     /**
@@ -159,7 +259,7 @@ public class LoginManager {
             @Override
             public void onCompleted(String url, Exception exception) {
                 if (exception == null) {
-                    MobileServiceUser user = null;
+                    MobileServiceUser user;
                     try {
                         String decodedUrl = URLDecoder.decode(url, MobileServiceClient.UTF8_ENCODING);
 
@@ -306,9 +406,6 @@ public class LoginManager {
                 callback.onCompleted(user, null, null);
             }
         });
-    }
-
-    /**
     }
 
     /**
@@ -530,7 +627,7 @@ public class LoginManager {
             @Override
             protected void onPostExecute(ServiceFilterResponse response) {
                 if (mTaskException == null && response != null) {
-                    MobileServiceUser user = null;
+                    MobileServiceUser user;
                     try {
                         // Get the user from the response and create a
                         // MobileServiceUser object from the JSON
