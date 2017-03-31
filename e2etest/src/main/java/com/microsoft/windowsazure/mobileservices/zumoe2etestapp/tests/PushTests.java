@@ -50,6 +50,8 @@ public class PushTests extends TestGroup {
     public static String registrationId;
     InstanceID iid;
 
+    private final static String TOPIC_SPORTS = "topic:Sports";
+    private final static String TOPIC_NEWS = "topic:News";
 
     public PushTests() {
         super("Push tests");
@@ -58,8 +60,10 @@ public class PushTests extends TestGroup {
         this.addTest(createRegistrationTest("Registration Test"));
         this.addTest(createLoginRegistrationTest("Login Registration Test"));
         this.addTest(createUnregistrationTest("Unregistration Test"));
-        this.addTest(createPushTest("Push Test"));
-        this.addTest(createTemplateRegistrationAndPushTest("Template Test"));
+        this.addTest(createPushWithTagsTest("Push Test with tags"));
+        this.addTest(createTemplateRegistrationAndPushWithTagsTest("Push Test with template and tags"));
+        this.addTest(createPushWithoutTagsTest("Push Test without template or tags"));
+        this.addTest(createTemplateRegistrationAndPushWithoutTagsTest("Push Test with template"));
     }
 
     private ListenableFuture<JsonElement> deleteRegistrationsForChannel(final MobileServiceClient client, String registrationId) {
@@ -237,6 +241,7 @@ public class PushTests extends TestGroup {
                     mobileServicePush.unregister().get();
 
                     JsonElement unregisterResult = verifyUnregisterInstallationResult(client).get();
+
                     if (!unregisterResult.getAsBoolean()) {
                         this.log("Unregister failed");
                         result.setStatus(TestStatus.Failed);
@@ -258,12 +263,7 @@ public class PushTests extends TestGroup {
         return test;
     }
 
-    private TestCase createPushTest(String testName) {
-        final JsonObject pushContent = new JsonObject();
-        pushContent.addProperty("sample", "PushTest");
-
-        final JsonObject payload = new JsonObject();
-        payload.add("message", pushContent);
+    private TestCase createPushWithoutTagsTest(String testName) {
 
         TestCase test = new TestCase(testName) {
 
@@ -271,7 +271,7 @@ public class PushTests extends TestGroup {
             protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
 
                 try {
-                    this.log("Starting Push Test");
+                    this.log("Starting createPushWithoutTagsTest");
                     final TestResult result = new TestResult();
                     result.setStatus(TestStatus.Passed);
                     result.setTestCase(this);
@@ -282,36 +282,198 @@ public class PushTests extends TestGroup {
 
                     mobileServicePush.register(registrationId).get();
                     this.log("registration complete");
-                    ArrayList<Pair<String, String>> parameters = new ArrayList<>();
-                    parameters.add(new Pair<>("channelUri", registrationId));
-                    JsonElement registerResult = verifyRegisterInstallationResult(client, parameters).get();
 
-                    if (!registerResult.getAsBoolean()) {
-                        this.log("Register failed");
-                        result.setStatus(TestStatus.Failed);
-                        callback.onTestComplete(this, result);
-                        return;
-                    }
-
-                    this.log("Verified registration");
+                    // push test for TOPIC_SPORTS
                     JsonObject item = new JsonObject();
                     item.addProperty("method", "send");
                     item.addProperty("token", "dummy");
                     item.addProperty("type", "gcm");
 
                     JsonObject sentPayload = new JsonObject();
+
+                    JsonObject pushContent = new JsonObject();
+                    pushContent.addProperty("sample", "PushTest");
+
+                    JsonObject payload = new JsonObject();
+                    payload.add("message", pushContent);
+
                     sentPayload.add("data", payload);
                     item.add("payload", sentPayload);
 
                     this.log("sending push message:" + sentPayload.toString());
-                    JsonElement jsonObject = client.invokeApi("Push", item).get();
+                    client.invokeApi("Push", item).get();
                     if (!PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    } else {
+                        this.log(sentPayload.toString() + " message received");
+                    }
+
+                    mobileServicePush.unregister().get();
+                    this.log("OnCompleted.");
+                    callback.onTestComplete(this, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
+                    return;
+                }
+            }
+        };
+
+        test.setName(testName);
+
+        return test;
+    }
+
+    private TestCase createPushWithTagsTest(String testName) {
+
+        TestCase test = new TestCase(testName) {
+
+            @Override
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+
+                try {
+                    this.log("Starting createPushWithTagsTest");
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+
+                    final MobileServicePush mobileServicePush = client.getPush();
+                    String registrationId = getRegistrationId(client);
+                    this.log("Acquired registrationId:" + registrationId);
+
+                    // Register "topic:Sports" tag, not "topic:News"
+                    ArrayList<String> tags = new ArrayList<>();
+                    tags.add(TOPIC_SPORTS);
+
+                    mobileServicePush.register(registrationId, tags).get();
+                    this.log("registration complete");
+
+                    // Send push notification to device with "topic:Sports" tag,
+                    // we should expect to get the notification
+                    JsonObject item = new JsonObject();
+                    item.addProperty("method", "send");
+                    item.addProperty("token", "dummy");
+                    item.addProperty("type", "gcm");
+
+                    JsonObject sentPayload = new JsonObject();
+
+                    JsonObject pushContent = new JsonObject();
+                    pushContent.addProperty("sample", "message of sports");
+
+                    JsonObject payload = new JsonObject();
+                    payload.add("message", pushContent);
+
+                    sentPayload.add("data", payload);
+                    item.add("payload", sentPayload);
+                    item.addProperty("tag", TOPIC_SPORTS);
+
+                    this.log("sending push message:" + sentPayload.toString() + " with tag " + TOPIC_SPORTS);
+                    client.invokeApi("Push", item).get();
+                    if (!PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    } else {
+                        this.log(sentPayload.toString() + " message received because we registered tag " + TOPIC_SPORTS);
+                    }
+
+                    // Send push notification to device with "topic:News" tag,
+                    // we won't get the notification because we didn't register for it
+                    JsonObject item2 = new JsonObject();
+                    item2.addProperty("method", "send");
+                    item2.addProperty("token", "dummy");
+                    item2.addProperty("type", "gcm");
+
+                    JsonObject sentPayload2 = new JsonObject();
+
+                    JsonObject pushContent2 = new JsonObject();
+                    pushContent2.addProperty("sample", "message of news");
+
+                    JsonObject payload2 = new JsonObject();
+                    payload2.add("message", pushContent);
+
+                    sentPayload2.add("data", payload2);
+                    item2.add("payload", sentPayload2);
+                    item2.addProperty("tag", TOPIC_NEWS);
+
+                    this.log("sending push message:" + sentPayload2.toString()  + " with tag " + TOPIC_NEWS);
+                    client.invokeApi("Push", item2).get();
+                    if (PushMessageManager.instance.isPushMessageReceived(10000, pushContent2).get()) {
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return;
+                    } else {
+                        this.log("We don't receive message " + sentPayload2.toString() + " because we didn't register tag " + TOPIC_NEWS);
+                    }
+
+                    mobileServicePush.unregister().get();
+                    this.log("OnCompleted.");
+                    callback.onTestComplete(this, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
+                    return;
+                }
+            }
+        };
+
+        test.setName(testName);
+
+        return test;
+    }
+
+    private TestCase createTemplateRegistrationAndPushWithTagsTest(String testName) {
+        TestCase test = new TestCase(testName) {
+
+            @Override
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+
+                try {
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+
+                    this.log("Starting createTemplateRegistrationAndPushWithTagsTest");
+
+                    final MobileServicePush mobileServicePush = client.getPush();
+
+                    String registrationId = getRegistrationId(client);
+                    this.log("Acquired registrationId:" + registrationId);
+
+                    JsonObject templateJson = GetTemplate();
+
+                    ArrayList<String> tags = new ArrayList<>();
+                    tags.add(TOPIC_SPORTS);
+
+                    mobileServicePush.register(registrationId, templateJson, tags);
+
+                    PushMessageManager.instance.clearMessages();
+
+                    JsonObject pushMessage = new JsonObject();
+                    pushMessage.addProperty("fullName", "John Doe");
+
+                    JsonObject item = new JsonObject();
+                    item.addProperty("method", "send");
+                    item.addProperty("token", "dummy");
+                    item.addProperty("type", "template");
+                    item.add("payload", pushMessage);
+
+                    JsonObject expectedPushMessage = new JsonObject();
+                    expectedPushMessage.addProperty("user", "John Doe");
+
+                    this.log("sending push message:" + pushMessage.toString() + " with tag " + TOPIC_SPORTS);
+                    JsonElement jsonObject = client.invokeApi("Push", item).get();
+
+                    if (!PushMessageManager.instance.isPushMessageReceived(30000, expectedPushMessage).get()) {
                         result.setStatus(TestStatus.Failed);
                         callback.onTestComplete(this, result);
                         return;
                     }
 
+                    this.log("push received:" + expectedPushMessage.toString());
+
                     mobileServicePush.unregister().get();
+                    this.log("unregistration complete");
                     this.log("OnCompleted: " + jsonObject.toString());
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
@@ -326,7 +488,7 @@ public class PushTests extends TestGroup {
         return test;
     }
 
-    private TestCase createTemplateRegistrationAndPushTest(String testName) {
+    private TestCase createTemplateRegistrationAndPushWithoutTagsTest(String testName) {
 
         TestCase test = new TestCase(testName) {
 
@@ -338,7 +500,7 @@ public class PushTests extends TestGroup {
                     result.setStatus(TestStatus.Passed);
                     result.setTestCase(this);
 
-                    this.log("Starting Template Push Test");
+                    this.log("Starting createTemplateRegistrationAndPushWithoutTagsTest");
 
                     final MobileServicePush mobileServicePush = client.getPush();
 
@@ -348,20 +510,6 @@ public class PushTests extends TestGroup {
                     JsonObject templateJson = GetTemplate();
 
                     mobileServicePush.register(registrationId, templateJson);
-
-                    ArrayList<Pair<String, String>> parameters = new ArrayList<>();
-                    parameters.add(new Pair<>("channelUri", registrationId));
-                    parameters.add(new Pair<>("templates", templateJson.toString()));
-                    JsonElement registerResult = verifyRegisterInstallationResult(client, parameters).get();
-
-                    this.log("template registration complete:" + templateJson.toString());
-
-                    if (!registerResult.getAsBoolean()) {
-                        this.log("Register failed");
-                        result.setStatus(TestStatus.Failed);
-                        callback.onTestComplete(this, result);
-                        return;
-                    }
 
                     PushMessageManager.instance.clearMessages();
 

@@ -33,3 +33,4 @@ build/
 
 # generated gradle folder
 *.gradle/
+e2etest/google-services.json

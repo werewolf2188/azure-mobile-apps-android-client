@@ -39,6 +39,7 @@ import com.squareup.okhttp.internal.http.StatusLine;
 
 import junit.framework.Assert;
 
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 public class PushTests extends InstrumentationTestCase {
@@ -197,8 +198,63 @@ public class PushTests extends InstrumentationTestCase {
         Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
     }
 
+    public void testRegisterTemplateAndTags() throws Throwable {
 
-    public void testRegisterTemplateWithJobject() throws Throwable {
+        final Container container = new Container();
+
+        MobileServiceClient client = null;
+        final String handle = "handle";
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
+        final String expectedContent =
+                "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":{\"template1\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\"}},\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+
+            client = client.withFilter(new ServiceFilter() {
+
+                @Override
+                public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+
+                    container.requestUrl = request.getUrl();
+                    container.requestContent = request.getContent();
+                    container.requestMethod = request.getMethod();
+
+                    ServiceFilterResponseMock mockResponse = new ServiceFilterResponseMock();
+                    mockResponse.setStatus(new StatusLine(Protocol.HTTP_2, 204, ""));
+
+                    ServiceFilterRequestMock mockRequest = new ServiceFilterRequestMock(mockResponse);
+
+                    return nextServiceFilterCallback.onNext(mockRequest);
+                }
+            });
+
+            ArrayList<String> tags = new ArrayList<>();
+            tags.add("topics:my-first-tag");
+            tags.add("topics:my-second-tag");
+
+            final MobileServicePush push = client.getPush();
+            push.registerTemplateAndTags(handle, "template1", "{\"data\":\"abc\"}", tags).get();
+
+        } catch (Exception exception) {
+            if (exception instanceof ExecutionException) {
+                container.exception = (Exception) exception.getCause();
+            } else {
+                container.exception = exception;
+            }
+
+            fail(container.exception.getMessage());
+        }
+
+        // Asserts
+        Assert.assertEquals(expectedUrl, container.requestUrl);
+        Assert.assertEquals(expectedContent, container.requestContent);
+        Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
+    }
+
+    public void testRegisterJsonObjectTemplate() throws Throwable {
 
         final Container container = new Container();
 
@@ -253,7 +309,7 @@ public class PushTests extends InstrumentationTestCase {
         Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
     }
 
-    public void testRegisterTemplateAndTempateBodyAsJobject() throws Throwable {
+    public void testRegisterTemplateBodyAsJsonObject() throws Throwable {
 
         final Container container = new Container();
 
@@ -291,6 +347,176 @@ public class PushTests extends InstrumentationTestCase {
             final MobileServicePush push = client.getPush();
 
             push.register(handle, templates).get();
+
+        } catch (Exception exception) {
+            if (exception instanceof ExecutionException) {
+                container.exception = (Exception) exception.getCause();
+            } else {
+                container.exception = exception;
+            }
+
+            fail(container.exception.getMessage());
+        }
+
+        // Asserts
+        Assert.assertEquals(expectedUrl, container.requestUrl);
+        Assert.assertEquals(expectedContent, container.requestContent);
+        Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
+    }
+
+    public void testRegisterTagsOfEmptyArrayList() throws Throwable {
+        final Container container = new Container();
+
+        MobileServiceClient client = null;
+        final String handle = "handle";
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\"}";
+
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+
+            client = client.withFilter(new ServiceFilter() {
+
+                @Override
+                public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+
+                    container.requestUrl = request.getUrl();
+                    container.requestContent = request.getContent();
+                    container.requestMethod = request.getMethod();
+
+                    ServiceFilterResponseMock mockResponse = new ServiceFilterResponseMock();
+                    mockResponse.setStatus(new StatusLine(Protocol.HTTP_2, 204, ""));
+
+                    ServiceFilterRequestMock mockRequest = new ServiceFilterRequestMock(mockResponse);
+
+                    return nextServiceFilterCallback.onNext(mockRequest);
+                }
+            });
+
+            ArrayList<String> tags = new ArrayList<>();
+
+            final MobileServicePush push = client.getPush();
+
+            push.register(handle, tags).get();
+
+        } catch (Exception exception) {
+            if (exception instanceof ExecutionException) {
+                container.exception = (Exception) exception.getCause();
+            } else {
+                container.exception = exception;
+            }
+
+            fail(container.exception.getMessage());
+        }
+
+        // Asserts
+        Assert.assertEquals(expectedUrl, container.requestUrl);
+        Assert.assertEquals(expectedContent, container.requestContent);
+        Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
+    }
+
+    public void testRegisterTags() throws Throwable {
+        final Container container = new Container();
+
+        MobileServiceClient client = null;
+        final String handle = "handle";
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
+
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+
+            client = client.withFilter(new ServiceFilter() {
+
+                @Override
+                public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+
+                    container.requestUrl = request.getUrl();
+                    container.requestContent = request.getContent();
+                    container.requestMethod = request.getMethod();
+
+                    ServiceFilterResponseMock mockResponse = new ServiceFilterResponseMock();
+                    mockResponse.setStatus(new StatusLine(Protocol.HTTP_2, 204, ""));
+
+                    ServiceFilterRequestMock mockRequest = new ServiceFilterRequestMock(mockResponse);
+
+                    return nextServiceFilterCallback.onNext(mockRequest);
+                }
+            });
+
+            ArrayList<String> tags = new ArrayList<>();
+            tags.add("topics:my-first-tag");
+            tags.add("topics:my-second-tag");
+
+            final MobileServicePush push = client.getPush();
+
+            push.register(handle, tags).get();
+
+        } catch (Exception exception) {
+            if (exception instanceof ExecutionException) {
+                container.exception = (Exception) exception.getCause();
+            } else {
+                container.exception = exception;
+            }
+
+            fail(container.exception.getMessage());
+        }
+
+        // Asserts
+        Assert.assertEquals(expectedUrl, container.requestUrl);
+        Assert.assertEquals(expectedContent, container.requestContent);
+        Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
+    }
+
+    public void testRegisterJsonObjectTemplateAndTags() throws Throwable {
+
+        final Container container = new Container();
+
+        MobileServiceClient client = null;
+        final String handle = "handle";
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" + createTemplateObject(true).toString() +
+                ",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
+
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+
+            client = client.withFilter(new ServiceFilter() {
+
+                @Override
+                public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+
+                    container.requestUrl = request.getUrl();
+                    container.requestContent = request.getContent();
+                    container.requestMethod = request.getMethod();
+
+                    ServiceFilterResponseMock mockResponse = new ServiceFilterResponseMock();
+                    mockResponse.setStatus(new StatusLine(Protocol.HTTP_2, 204, ""));
+
+                    ServiceFilterRequestMock mockRequest = new ServiceFilterRequestMock(mockResponse);
+
+                    return nextServiceFilterCallback.onNext(mockRequest);
+                }
+            });
+
+            JsonObject templates = createTemplateObject(false);
+
+            ArrayList<String> tags = new ArrayList<>();
+            tags.add("topics:my-first-tag");
+            tags.add("topics:my-second-tag");
+
+            final MobileServicePush push = client.getPush();
+
+            push.register(handle, templates, tags).get();
 
         } catch (Exception exception) {
             if (exception instanceof ExecutionException) {

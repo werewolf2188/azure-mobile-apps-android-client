@@ -31,8 +31,10 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.microsoft.windowsazure.mobileservices.MobileServiceApplication;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
 import com.microsoft.windowsazure.mobileservices.MobileServiceFeatures;
@@ -87,7 +89,7 @@ public class MobileServicePush {
      * @return Future with Registration Information
      */
     public ListenableFuture<Void> register(String pnsHandle) {
-        return register(pnsHandle, (JsonObject) null);
+        return register(pnsHandle, null, null);
     }
 
     /**
@@ -98,7 +100,29 @@ public class MobileServicePush {
      * @return Future with TemplateRegistration Information
      */
     public ListenableFuture<Void> register(String pnsHandle, JsonObject templates) {
+        return register(pnsHandle, templates, null);
+    }
 
+    /**
+     * Registers the client for native notifications with tags
+     *
+     * @param pnsHandle PNS specific identifier
+     * @param tags Tag expression used to segment the devices and push a message to only a portion of the devices
+     * @return Future with Registration Information
+     */
+    public ListenableFuture<Void> register(String pnsHandle, ArrayList<String> tags) {
+        return register(pnsHandle, null, tags);
+    }
+
+    /**
+     * Registers the client for template notifications with tags
+     *
+     * @param pnsHandle PNS specific identifier
+     * @param templates Template to be used for registration
+     * @param tags Tag expression used to segment the devices and push a message to only a portion of the devices
+     * @return Future with Registration Information
+     */
+    public ListenableFuture<Void> register(String pnsHandle, JsonObject templates, ArrayList<String> tags) {
         final SettableFuture<Void> resultFuture = SettableFuture.create();
 
         if (isNullOrWhiteSpace(pnsHandle)) {
@@ -118,7 +142,7 @@ public class MobileServicePush {
             }
         }
 
-        ListenableFuture<Void> registerInternalFuture = createOrUpdateInstallation(pnsHandle, templates);
+        ListenableFuture<Void> registerInternalFuture = createOrUpdateInstallation(pnsHandle, templates, tags);
 
         Futures.addCallback(registerInternalFuture, new FutureCallback<Void>() {
             @Override
@@ -169,7 +193,19 @@ public class MobileServicePush {
      * @return Future with TemplateRegistration Information
      */
     public ListenableFuture<Void> registerTemplate(String pnsHandle, String templateName, String templateBody) {
+        return registerTemplateAndTags(pnsHandle, templateName, templateBody, null);
+    }
 
+    /**
+     * Registers the client for template notifications with tags
+     *
+     * @param pnsHandle    PNS specific identifier
+     * @param templateName The template name
+     * @param templateBody The template body
+     * @param tags Tag expression used to segment the devices and push a message to only a portion of the devices
+     * @return Future with TemplateRegistration Information
+     */
+    public ListenableFuture<Void> registerTemplateAndTags(String pnsHandle, String templateName, String templateBody, ArrayList<String> tags) {
         final SettableFuture<Void> resultFuture = SettableFuture.create();
 
         if (isNullOrWhiteSpace(pnsHandle)) {
@@ -189,7 +225,7 @@ public class MobileServicePush {
 
         JsonObject templateObject = GetTemplateObject(templateName, templateBody);
 
-        ListenableFuture<Void> registerInternalFuture = createOrUpdateInstallation(pnsHandle, templateObject);
+        ListenableFuture<Void> registerInternalFuture = createOrUpdateInstallation(pnsHandle, templateObject, tags);
 
         Futures.addCallback(registerInternalFuture, new FutureCallback<Void>() {
             @Override
@@ -301,11 +337,7 @@ public class MobileServicePush {
         return resultFuture;
     }
 
-    private ListenableFuture<Void> createOrUpdateInstallation(String pnsHandle) {
-        return createOrUpdateInstallation(pnsHandle, null);
-    }
-
-    private ListenableFuture<Void> createOrUpdateInstallation(String pnsHandle, JsonElement templates) {
+    private ListenableFuture<Void> createOrUpdateInstallation(String pnsHandle, JsonElement templates, ArrayList<String> tags) {
         JsonObject installation = new JsonObject();
         installation.addProperty("pushChannel", pnsHandle);
         installation.addProperty("platform", "gcm");
@@ -314,13 +346,21 @@ public class MobileServicePush {
             installation.add("templates", templates);
         }
 
+        if (tags != null && tags.size() > 0) {
+            JsonArray tagsJsonArray = new JsonArray();
+            for (String tag : tags) {
+                tagsJsonArray.add(new JsonPrimitive(tag));
+            }
+            installation.add("tags", tagsJsonArray);
+        }
+
         final SettableFuture<Void> resultFuture = SettableFuture.create();
 
         String installationId = MobileServiceApplication.getInstallationId(mHttpClient.getClient().getContext());
 
         String path = PNS_API_URL + "/installations/" + Uri.encode(installationId);
 
-        List<Pair<String, String>> requestHeaders = new ArrayList<Pair<String, String>>();
+        List<Pair<String, String>> requestHeaders = new ArrayList<>();
 
         requestHeaders.add(new Pair<>(HttpConstants.ContentType, MobileServiceConnection.JSON_CONTENTTYPE));
 
