@@ -26,11 +26,14 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonObject;
 import com.microsoft.windowsazure.mobileservices.MobileServiceApplication;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
+import com.microsoft.windowsazure.mobileservices.MobileServiceException;
 import com.microsoft.windowsazure.mobileservices.http.HttpConstants;
 import com.microsoft.windowsazure.mobileservices.http.NextServiceFilterCallback;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilter;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequest;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
+import com.microsoft.windowsazure.mobileservices.notifications.Installation;
+import com.microsoft.windowsazure.mobileservices.notifications.InstallationTemplate;
 import com.microsoft.windowsazure.mobileservices.notifications.MobileServicePush;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.framework.filters.ServiceFilterRequestMock;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.framework.filters.ServiceFilterResponseMock;
@@ -40,6 +43,8 @@ import com.squareup.okhttp.internal.http.StatusLine;
 import junit.framework.Assert;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
 public class PushTests extends InstrumentationTestCase {
@@ -198,62 +203,6 @@ public class PushTests extends InstrumentationTestCase {
         Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
     }
 
-    public void testRegisterTemplateAndTags() throws Throwable {
-
-        final Container container = new Container();
-
-        MobileServiceClient client = null;
-        final String handle = "handle";
-
-        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
-
-        final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent =
-                "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":{\"template1\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\"}},\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
-        try {
-            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
-            client = client.withFilter(new ServiceFilter() {
-
-                @Override
-                public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
-
-                    container.requestUrl = request.getUrl();
-                    container.requestContent = request.getContent();
-                    container.requestMethod = request.getMethod();
-
-                    ServiceFilterResponseMock mockResponse = new ServiceFilterResponseMock();
-                    mockResponse.setStatus(new StatusLine(Protocol.HTTP_2, 204, ""));
-
-                    ServiceFilterRequestMock mockRequest = new ServiceFilterRequestMock(mockResponse);
-
-                    return nextServiceFilterCallback.onNext(mockRequest);
-                }
-            });
-
-            ArrayList<String> tags = new ArrayList<>();
-            tags.add("topics:my-first-tag");
-            tags.add("topics:my-second-tag");
-
-            final MobileServicePush push = client.getPush();
-            push.registerTemplateAndTags(handle, "template1", "{\"data\":\"abc\"}", tags).get();
-
-        } catch (Exception exception) {
-            if (exception instanceof ExecutionException) {
-                container.exception = (Exception) exception.getCause();
-            } else {
-                container.exception = exception;
-            }
-
-            fail(container.exception.getMessage());
-        }
-
-        // Asserts
-        Assert.assertEquals(expectedUrl, container.requestUrl);
-        Assert.assertEquals(expectedContent, container.requestContent);
-        Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
-    }
-
     public void testRegisterJsonObjectTemplate() throws Throwable {
 
         final Container container = new Container();
@@ -364,17 +313,111 @@ public class PushTests extends InstrumentationTestCase {
         Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
     }
 
-    public void testRegisterTagsOfEmptyArrayList() throws Throwable {
+    public void testRegisterInstallationWithTagNoTemplate() throws Throwable {
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        String handle = "handle";
+        ArrayList<String> tags = new ArrayList<>();
+        tags.add("topics:my-first-tag");
+        tags.add("topics:my-second-tag");
+
+        Installation installation = new Installation(installationId, "gcm", handle, null, tags, null);
+
+        String expectedContent =
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
+
+        this.testRegisterInstallation(installation, expectedContent);
+    }
+
+    public void testRegisterInstallationIgnoresExpirationTimeAndPushChannelExpired() throws Throwable {
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        String handle = "handle";
+        ArrayList<String> tags = new ArrayList<>();
+        tags.add("topics:my-first-tag");
+        tags.add("topics:my-second-tag");
+
+        Installation installation = new Installation(new Date(), installationId, "gcm", handle, true, null, tags, null);
+
+        String expectedContent =
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
+
+        this.testRegisterInstallation(installation, expectedContent);
+    }
+
+    public void testRegisterInstallationWithPushVariables() throws Throwable {
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        String handle = "handle";
+        ArrayList<String> tags = new ArrayList<>();
+        tags.add("topics:my-first-tag");
+        tags.add("topics:my-second-tag");
+        HashMap<String, String> pushVariables = new HashMap<>();
+        pushVariables.put("key1", "value1");
+        pushVariables.put("key2", "value2");
+        HashMap<String, InstallationTemplate> templates = new HashMap<>();
+        InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
+        templates.put("templateName", template);
+
+        Installation installation = new Installation(installationId, "gcm", handle, pushVariables, tags, templates);
+
+        String expectedContent =
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"pushVariables\":{\"key2\":\"value2\",\"key1\":\"value1\"},\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"],\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
+
+        this.testRegisterInstallation(installation, expectedContent);
+    }
+
+    public void testRegisterInstallationWithTagAndTagInsideTemplate() throws Throwable {
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        String handle = "handle";
+        ArrayList<String> tags = new ArrayList<>();
+        tags.add("topics:my-first-tag");
+        tags.add("topics:my-second-tag");
+        HashMap<String, InstallationTemplate> templates = new HashMap<>();
+        InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
+        templates.put("templateName", template);
+
+        Installation installation = new Installation(installationId, "gcm", handle, null, tags, templates);
+
+        String expectedContent =
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"],\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
+
+        this.testRegisterInstallation(installation, expectedContent);
+    }
+
+    public void testRegisterInstallationWithTagInsideTemplate() throws Throwable {
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        String handle = "handle";
+        ArrayList<String> tags = new ArrayList<>();
+        tags.add("topics:my-first-tag");
+        tags.add("topics:my-second-tag");
+        HashMap<String, InstallationTemplate> templates = new HashMap<>();
+        InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
+        templates.put("templateName", template);
+
+        Installation installation = new Installation(installationId, "gcm", handle, null, null, templates);
+
+        String expectedContent =
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
+
+        this.testRegisterInstallation(installation, expectedContent);
+    }
+
+    private void testRegisterInstallation(Installation installation, String expectedContent) {
+
         final Container container = new Container();
 
-        MobileServiceClient client = null;
-        final String handle = "handle";
+        MobileServiceClient client;
 
         String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
 
         final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\"}";
-
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
@@ -396,11 +439,9 @@ public class PushTests extends InstrumentationTestCase {
                 }
             });
 
-            ArrayList<String> tags = new ArrayList<>();
+            MobileServicePush push = client.getPush();
 
-            final MobileServicePush push = client.getPush();
-
-            push.register(handle, tags).get();
+            push.register(installation).get();
 
         } catch (Exception exception) {
             if (exception instanceof ExecutionException) {
@@ -418,120 +459,71 @@ public class PushTests extends InstrumentationTestCase {
         Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
     }
 
-    public void testRegisterTags() throws Throwable {
-        final Container container = new Container();
-
-        MobileServiceClient client = null;
-        final String handle = "handle";
-
-        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
-
-        final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
-
-        try {
-            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
-
-            client = client.withFilter(new ServiceFilter() {
-
-                @Override
-                public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
-
-                    container.requestUrl = request.getUrl();
-                    container.requestContent = request.getContent();
-                    container.requestMethod = request.getMethod();
-
-                    ServiceFilterResponseMock mockResponse = new ServiceFilterResponseMock();
-                    mockResponse.setStatus(new StatusLine(Protocol.HTTP_2, 204, ""));
-
-                    ServiceFilterRequestMock mockRequest = new ServiceFilterRequestMock(mockResponse);
-
-                    return nextServiceFilterCallback.onNext(mockRequest);
-                }
-            });
-
-            ArrayList<String> tags = new ArrayList<>();
-            tags.add("topics:my-first-tag");
-            tags.add("topics:my-second-tag");
-
-            final MobileServicePush push = client.getPush();
-
-            push.register(handle, tags).get();
-
-        } catch (Exception exception) {
-            if (exception instanceof ExecutionException) {
-                container.exception = (Exception) exception.getCause();
-            } else {
-                container.exception = exception;
-            }
-
-            fail(container.exception.getMessage());
-        }
-
-        // Asserts
-        Assert.assertEquals(expectedUrl, container.requestUrl);
-        Assert.assertEquals(expectedContent, container.requestContent);
-        Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
+    public void testRegisterInstallationWhenInstallationIsNull() throws Throwable {
+        this.testRegisterInstallationOnInvalidInstallation(null);
     }
 
-    public void testRegisterJsonObjectTemplateAndTags() throws Throwable {
-
-        final Container container = new Container();
-
-        MobileServiceClient client = null;
-        final String handle = "handle";
+    public void testRegisterInstallationWhenInstallationHasNullPushChannel() throws Throwable {
 
         String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
 
-        final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" + createTemplateObject(true).toString() +
-                ",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
+        ArrayList<String> tags = new ArrayList<>();
+        tags.add("topics:my-first-tag");
+        tags.add("topics:my-second-tag");
+        HashMap<String, InstallationTemplate> templates = new HashMap<>();
+        InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
+        templates.put("templateName", template);
+        Installation installation = new Installation(installationId, "gcm", null, null, tags, templates);
+
+        this.testRegisterInstallationOnInvalidInstallation(installation);
+    }
+
+    public void testRegisterInstallationWhenInstallationHasNullInstallationId() throws Throwable {
+
+        String handle = "handle";
+        ArrayList<String> tags = new ArrayList<>();
+        tags.add("topics:my-first-tag");
+        tags.add("topics:my-second-tag");
+        HashMap<String, InstallationTemplate> templates = new HashMap<>();
+        InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
+        templates.put("templateName", template);
+        Installation installation = new Installation(null, "gcm", handle, null, tags, templates);
+
+        this.testRegisterInstallationOnInvalidInstallation(installation);
+    }
+
+    public void testRegisterInstallationWhenInstallationHasNullPlatform() throws Throwable {
+
+        String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
+
+        String handle = "handle";
+        ArrayList<String> tags = new ArrayList<>();
+        tags.add("topics:my-first-tag");
+        tags.add("topics:my-second-tag");
+        HashMap<String, InstallationTemplate> templates = new HashMap<>();
+        InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
+        templates.put("templateName", template);
+        Installation installation = new Installation(installationId, null, handle, null, tags, templates);
+
+        this.testRegisterInstallationOnInvalidInstallation(installation);
+    }
+
+    private void testRegisterInstallationOnInvalidInstallation(Installation installation) throws Throwable {
+
+        MobileServiceClient client;
 
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
-            client = client.withFilter(new ServiceFilter() {
+            MobileServicePush push = client.getPush();
 
-                @Override
-                public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
-
-                    container.requestUrl = request.getUrl();
-                    container.requestContent = request.getContent();
-                    container.requestMethod = request.getMethod();
-
-                    ServiceFilterResponseMock mockResponse = new ServiceFilterResponseMock();
-                    mockResponse.setStatus(new StatusLine(Protocol.HTTP_2, 204, ""));
-
-                    ServiceFilterRequestMock mockRequest = new ServiceFilterRequestMock(mockResponse);
-
-                    return nextServiceFilterCallback.onNext(mockRequest);
-                }
-            });
-
-            JsonObject templates = createTemplateObject(false);
-
-            ArrayList<String> tags = new ArrayList<>();
-            tags.add("topics:my-first-tag");
-            tags.add("topics:my-second-tag");
-
-            final MobileServicePush push = client.getPush();
-
-            push.register(handle, templates, tags).get();
+            push.register(installation).get();
 
         } catch (Exception exception) {
-            if (exception instanceof ExecutionException) {
-                container.exception = (Exception) exception.getCause();
-            } else {
-                container.exception = exception;
-            }
-
-            fail(container.exception.getMessage());
+            assertTrue(exception instanceof ExecutionException);
+            assertTrue(exception.getCause() instanceof MobileServiceException);
+            assertEquals("Error with create or update installation. installationId, pushChannel or platform of installation can't be NULL.", exception.getCause().getMessage());
         }
-
-        // Asserts
-        Assert.assertEquals(expectedUrl, container.requestUrl);
-        Assert.assertEquals(expectedContent, container.requestContent);
-        Assert.assertEquals(HttpConstants.PutMethod, container.requestMethod);
     }
 
     private JsonObject createTemplateObject(Boolean isTemplateBodyString) {

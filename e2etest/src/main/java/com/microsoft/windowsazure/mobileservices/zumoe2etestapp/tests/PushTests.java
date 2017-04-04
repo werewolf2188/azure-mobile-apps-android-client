@@ -19,6 +19,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests;
 
+import android.support.annotation.NonNull;
 import android.util.Pair;
 
 import com.google.android.gms.gcm.GoogleCloudMessaging;
@@ -27,11 +28,16 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.microsoft.windowsazure.mobileservices.MobileServiceApplication;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
 import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceUser;
 import com.microsoft.windowsazure.mobileservices.http.HttpConstants;
+import com.microsoft.windowsazure.mobileservices.notifications.Installation;
+import com.microsoft.windowsazure.mobileservices.notifications.InstallationTemplate;
 import com.microsoft.windowsazure.mobileservices.notifications.MobileServicePush;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.MainActivity;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.PushMessageManager;
@@ -43,12 +49,13 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestSt
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class PushTests extends TestGroup {
 
     public static MainActivity mainActivity;
-    public static String registrationId;
-    InstanceID iid;
+    private static String registrationId;
+    private InstanceID instanceID;
 
     private final static String TOPIC_SPORTS = "topic:Sports";
     private final static String TOPIC_NEWS = "topic:News";
@@ -56,14 +63,23 @@ public class PushTests extends TestGroup {
     public PushTests() {
         super("Push tests");
 
+        // registration tests
         this.addTest(createInitialDeleteRegistrationTest("Initial DeleteRegistration Test"));
+
         this.addTest(createRegistrationTest("Registration Test"));
+
         this.addTest(createLoginRegistrationTest("Login Registration Test"));
+
         this.addTest(createUnregistrationTest("Unregistration Test"));
-        this.addTest(createPushWithTagsTest("Push Test with tags"));
-        this.addTest(createTemplateRegistrationAndPushWithTagsTest("Push Test with template and tags"));
-        this.addTest(createPushWithoutTagsTest("Push Test without template or tags"));
-        this.addTest(createTemplateRegistrationAndPushWithoutTagsTest("Push Test with template"));
+
+        // registration tests combined with push tests
+        this.addTest(createPushWithNoTemplateOrTagsTest("Push Test with no template or tags"));
+
+        this.addTest(createPushWithTagsNoTemplateTest("Push Test with tags but no template"));
+
+        this.addTest(createPushWithTemplateNoTagsTest("Push Test with template but no tags"));
+
+        this.addTest(createPushWithTagsAndTemplateTest("Push Test with template and tags"));
     }
 
     private ListenableFuture<JsonElement> deleteRegistrationsForChannel(final MobileServiceClient client, String registrationId) {
@@ -162,7 +178,6 @@ public class PushTests extends TestGroup {
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
                     callback.onTestComplete(this, createResultFromException(e));
-                    return;
                 }
             }
         };
@@ -216,7 +231,6 @@ public class PushTests extends TestGroup {
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
                     callback.onTestComplete(this, createResultFromException(e));
-                    return;
                 }
             }
         };
@@ -254,7 +268,6 @@ public class PushTests extends TestGroup {
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
                     callback.onTestComplete(this, createResultFromException(e));
-                    return;
                 }
             }
         };
@@ -263,7 +276,7 @@ public class PushTests extends TestGroup {
         return test;
     }
 
-    private TestCase createPushWithoutTagsTest(String testName) {
+    private TestCase createPushWithNoTemplateOrTagsTest(String testName) {
 
         TestCase test = new TestCase(testName) {
 
@@ -271,7 +284,7 @@ public class PushTests extends TestGroup {
             protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
 
                 try {
-                    this.log("Starting createPushWithoutTagsTest");
+                    this.log("Starting createPushWithNoTemplateOrTagsTest");
                     final TestResult result = new TestResult();
                     result.setStatus(TestStatus.Passed);
                     result.setTestCase(this);
@@ -280,42 +293,51 @@ public class PushTests extends TestGroup {
                     String registrationId = getRegistrationId(client);
                     this.log("Acquired registrationId:" + registrationId);
 
+                    // register with pnsHandle
                     mobileServicePush.register(registrationId).get();
                     this.log("registration complete");
 
-                    // push test for TOPIC_SPORTS
-                    JsonObject item = new JsonObject();
-                    item.addProperty("method", "send");
-                    item.addProperty("token", "dummy");
-                    item.addProperty("type", "gcm");
-
-                    JsonObject sentPayload = new JsonObject();
-
-                    JsonObject pushContent = new JsonObject();
-                    pushContent.addProperty("sample", "PushTest");
-
-                    JsonObject payload = new JsonObject();
-                    payload.add("message", pushContent);
-
-                    sentPayload.add("data", payload);
-                    item.add("payload", sentPayload);
-
-                    this.log("sending push message:" + sentPayload.toString());
-                    client.invokeApi("Push", item).get();
-                    if (!PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
-                        result.setStatus(TestStatus.Failed);
-                        callback.onTestComplete(this, result);
+                    // send push notification
+                    if (!sendPushNotification(client, callback, result)) {
                         return;
-                    } else {
-                        this.log(sentPayload.toString() + " message received");
                     }
 
+                    // cleanup
                     mobileServicePush.unregister().get();
                     this.log("OnCompleted.");
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
                     callback.onTestComplete(this, createResultFromException(e));
-                    return;
+                }
+            }
+
+            private boolean sendPushNotification(MobileServiceClient client, TestExecutionCallback callback, TestResult result) throws InterruptedException, java.util.concurrent.ExecutionException {
+
+                JsonObject item = new JsonObject();
+                item.addProperty("method", "send");
+                item.addProperty("token", "dummy");
+                item.addProperty("type", "gcm");
+
+                JsonObject sentPayload = new JsonObject();
+
+                JsonObject pushContent = new JsonObject();
+                pushContent.addProperty("sample", "PushTest");
+
+                JsonObject payload = new JsonObject();
+                payload.add("message", pushContent);
+
+                sentPayload.add("data", payload);
+                item.add("payload", sentPayload);
+
+                this.log("sending push message:" + sentPayload.toString());
+                client.invokeApi("Push", item).get();
+                if (PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                    this.log(sentPayload.toString() + " message received");
+                    return true;
+                } else {
+                    result.setStatus(TestStatus.Failed);
+                    callback.onTestComplete(this, result);
+                    return false;
                 }
             }
         };
@@ -325,7 +347,7 @@ public class PushTests extends TestGroup {
         return test;
     }
 
-    private TestCase createPushWithTagsTest(String testName) {
+    private TestCase createPushWithTagsNoTemplateTest(String testName) {
 
         TestCase test = new TestCase(testName) {
 
@@ -333,78 +355,33 @@ public class PushTests extends TestGroup {
             protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
 
                 try {
-                    this.log("Starting createPushWithTagsTest");
+                    this.log("Starting createPushWithTagsNoTemplateTest");
                     final TestResult result = new TestResult();
                     result.setStatus(TestStatus.Passed);
                     result.setTestCase(this);
 
-                    final MobileServicePush mobileServicePush = client.getPush();
-                    String registrationId = getRegistrationId(client);
-                    this.log("Acquired registrationId:" + registrationId);
+                    MobileServicePush mobileServicePush = client.getPush();
 
                     // Register "topic:Sports" tag, not "topic:News"
                     ArrayList<String> tags = new ArrayList<>();
                     tags.add(TOPIC_SPORTS);
 
-                    mobileServicePush.register(registrationId, tags).get();
+                    Installation installation = createInstallation(client, tags);
+
+                    // register with installation
+                    mobileServicePush.register(installation).get();
                     this.log("registration complete");
 
                     // Send push notification to device with "topic:Sports" tag,
                     // we should expect to get the notification
-                    JsonObject item = new JsonObject();
-                    item.addProperty("method", "send");
-                    item.addProperty("token", "dummy");
-                    item.addProperty("type", "gcm");
-
-                    JsonObject sentPayload = new JsonObject();
-
-                    JsonObject pushContent = new JsonObject();
-                    pushContent.addProperty("sample", "message of sports");
-
-                    JsonObject payload = new JsonObject();
-                    payload.add("message", pushContent);
-
-                    sentPayload.add("data", payload);
-                    item.add("payload", sentPayload);
-                    item.addProperty("tag", TOPIC_SPORTS);
-
-                    this.log("sending push message:" + sentPayload.toString() + " with tag " + TOPIC_SPORTS);
-                    client.invokeApi("Push", item).get();
-                    if (!PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
-                        result.setStatus(TestStatus.Failed);
-                        callback.onTestComplete(this, result);
+                    if (!sendPushNotification(TOPIC_SPORTS, client, callback, result)) {
                         return;
-                    } else {
-                        this.log(sentPayload.toString() + " message received because we registered tag " + TOPIC_SPORTS);
                     }
 
                     // Send push notification to device with "topic:News" tag,
                     // we won't get the notification because we didn't register for it
-                    JsonObject item2 = new JsonObject();
-                    item2.addProperty("method", "send");
-                    item2.addProperty("token", "dummy");
-                    item2.addProperty("type", "gcm");
-
-                    JsonObject sentPayload2 = new JsonObject();
-
-                    JsonObject pushContent2 = new JsonObject();
-                    pushContent2.addProperty("sample", "message of news");
-
-                    JsonObject payload2 = new JsonObject();
-                    payload2.add("message", pushContent);
-
-                    sentPayload2.add("data", payload2);
-                    item2.add("payload", sentPayload2);
-                    item2.addProperty("tag", TOPIC_NEWS);
-
-                    this.log("sending push message:" + sentPayload2.toString()  + " with tag " + TOPIC_NEWS);
-                    client.invokeApi("Push", item2).get();
-                    if (PushMessageManager.instance.isPushMessageReceived(10000, pushContent2).get()) {
-                        result.setStatus(TestStatus.Failed);
-                        callback.onTestComplete(this, result);
+                    if (!sendPushNotification(TOPIC_NEWS, client, callback, result)) {
                         return;
-                    } else {
-                        this.log("We don't receive message " + sentPayload2.toString() + " because we didn't register tag " + TOPIC_NEWS);
                     }
 
                     mobileServicePush.unregister().get();
@@ -412,73 +389,62 @@ public class PushTests extends TestGroup {
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
                     callback.onTestComplete(this, createResultFromException(e));
-                    return;
                 }
             }
-        };
 
-        test.setName(testName);
+            @NonNull
+            private Installation createInstallation(MobileServiceClient client, ArrayList<String> tags) throws IOException {
+                String registrationId = getRegistrationId(client);
+                this.log("Acquired registrationId:" + registrationId);
 
-        return test;
-    }
+                String installationId = MobileServiceApplication.getInstallationId(client.getContext());
+                String platform = "gcm";
+                HashMap<String, String> pushVariables = null;
 
-    private TestCase createTemplateRegistrationAndPushWithTagsTest(String testName) {
-        TestCase test = new TestCase(testName) {
+                return new Installation(installationId, platform, registrationId, pushVariables, tags, null);
+            }
 
-            @Override
-            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+            private boolean sendPushNotification(String tag, MobileServiceClient client, TestExecutionCallback callback, TestResult result) throws InterruptedException, java.util.concurrent.ExecutionException {
 
-                try {
-                    final TestResult result = new TestResult();
-                    result.setStatus(TestStatus.Passed);
-                    result.setTestCase(this);
+                JsonObject item = new JsonObject();
+                item.addProperty("method", "send");
+                item.addProperty("token", "dummy");
+                item.addProperty("type", "gcm");
 
-                    this.log("Starting createTemplateRegistrationAndPushWithTagsTest");
+                JsonObject sentPayload = new JsonObject();
 
-                    final MobileServicePush mobileServicePush = client.getPush();
+                JsonObject pushContent = new JsonObject();
+                pushContent.addProperty("sample", tag + " message for your interest");
 
-                    String registrationId = getRegistrationId(client);
-                    this.log("Acquired registrationId:" + registrationId);
+                JsonObject payload = new JsonObject();
+                payload.add("message", pushContent);
 
-                    JsonObject templateJson = GetTemplate();
+                sentPayload.add("data", payload);
+                item.add("payload", sentPayload);
+                item.addProperty("tag", tag);
 
-                    ArrayList<String> tags = new ArrayList<>();
-                    tags.add(TOPIC_SPORTS);
+                this.log("sending push message:" + sentPayload.toString() + " with tag " + tag);
 
-                    mobileServicePush.register(registrationId, templateJson, tags);
+                client.invokeApi("Push", item).get();
 
-                    PushMessageManager.instance.clearMessages();
-
-                    JsonObject pushMessage = new JsonObject();
-                    pushMessage.addProperty("fullName", "John Doe");
-
-                    JsonObject item = new JsonObject();
-                    item.addProperty("method", "send");
-                    item.addProperty("token", "dummy");
-                    item.addProperty("type", "template");
-                    item.add("payload", pushMessage);
-
-                    JsonObject expectedPushMessage = new JsonObject();
-                    expectedPushMessage.addProperty("user", "John Doe");
-
-                    this.log("sending push message:" + pushMessage.toString() + " with tag " + TOPIC_SPORTS);
-                    JsonElement jsonObject = client.invokeApi("Push", item).get();
-
-                    if (!PushMessageManager.instance.isPushMessageReceived(30000, expectedPushMessage).get()) {
+                if (tag.equals(TOPIC_SPORTS)) {
+                    if (PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                        this.log(sentPayload.toString() + " message received because we registered tag " + tag);
+                        return true;
+                    } else {
                         result.setStatus(TestStatus.Failed);
                         callback.onTestComplete(this, result);
-                        return;
+                        return false;
                     }
-
-                    this.log("push received:" + expectedPushMessage.toString());
-
-                    mobileServicePush.unregister().get();
-                    this.log("unregistration complete");
-                    this.log("OnCompleted: " + jsonObject.toString());
-                    callback.onTestComplete(this, result);
-                } catch (Exception e) {
-                    callback.onTestComplete(this, createResultFromException(e));
-                    return;
+                } else {
+                    if (!PushMessageManager.instance.isPushMessageReceived(10000, pushContent).get()) {
+                        this.log("We shouldn't receive message " + sentPayload.toString() + " because we didn't register tag " + tag);
+                        return true;
+                    } else {
+                        result.setStatus(TestStatus.Failed);
+                        callback.onTestComplete(this, result);
+                        return false;
+                    }
                 }
             }
         };
@@ -488,7 +454,7 @@ public class PushTests extends TestGroup {
         return test;
     }
 
-    private TestCase createTemplateRegistrationAndPushWithoutTagsTest(String testName) {
+    private TestCase createPushWithTemplateNoTagsTest(String testName) {
 
         TestCase test = new TestCase(testName) {
 
@@ -500,49 +466,69 @@ public class PushTests extends TestGroup {
                     result.setStatus(TestStatus.Passed);
                     result.setTestCase(this);
 
-                    this.log("Starting createTemplateRegistrationAndPushWithoutTagsTest");
+                    this.log("Starting createPushWithTemplateNoTagsTest");
 
                     final MobileServicePush mobileServicePush = client.getPush();
 
-                    String registrationId = getRegistrationId(client);
-                    this.log("Acquired registrationId:" + registrationId);
+                    Installation installation = createInstallation(client);
 
-                    JsonObject templateJson = GetTemplate();
-
-                    mobileServicePush.register(registrationId, templateJson);
+                    // register with installation
+                    mobileServicePush.register(installation);
 
                     PushMessageManager.instance.clearMessages();
 
-                    JsonObject pushMessage = new JsonObject();
-                    pushMessage.addProperty("fullName", "John Doe");
-
-                    JsonObject item = new JsonObject();
-                    item.addProperty("method", "send");
-                    item.addProperty("token", "dummy");
-                    item.addProperty("type", "template");
-                    item.add("payload", pushMessage);
-
-                    JsonObject expectedPushMessage = new JsonObject();
-                    expectedPushMessage.addProperty("user", "John Doe");
-
-                    this.log("sending push message:" + item.toString());
-                    JsonElement jsonObject = client.invokeApi("Push", item).get();
-
-                    if (!PushMessageManager.instance.isPushMessageReceived(30000, expectedPushMessage).get()) {
-                        result.setStatus(TestStatus.Failed);
-                        callback.onTestComplete(this, result);
+                    // send push notification
+                    if (!sendPushNotification(client, callback, result)) {
                         return;
                     }
 
-                    this.log("push received:" + expectedPushMessage.toString());
-
                     mobileServicePush.unregister().get();
-                    this.log("unregistration complete");
-                    this.log("OnCompleted: " + jsonObject.toString());
+                    this.log("OnCompleted.");
                     callback.onTestComplete(this, result);
                 } catch (Exception e) {
                     callback.onTestComplete(this, createResultFromException(e));
-                    return;
+                }
+            }
+
+            @NonNull
+            private Installation createInstallation(MobileServiceClient client) throws IOException {
+                String registrationId = getRegistrationId(client);
+                this.log("Acquired registrationId:" + registrationId);
+
+                String platform = "gcm";
+                HashMap<String, String> pushVariables = null;
+                HashMap<String, InstallationTemplate> templates = new HashMap<>();
+                InstallationTemplate template = new InstallationTemplate("{\"data\":{\"message\":{\"user\":\"$(fullName)\"}}}", null);
+                templates.put("GcmTemplate", template);
+
+                String installationId = MobileServiceApplication.getInstallationId(client.getContext());
+
+                return new Installation(installationId, platform, registrationId, pushVariables, null, templates);
+            }
+
+            private boolean sendPushNotification(MobileServiceClient client, TestExecutionCallback callback, TestResult result) throws InterruptedException, java.util.concurrent.ExecutionException {
+                JsonObject pushMessage = new JsonObject();
+                pushMessage.addProperty("fullName", "John Doe");
+
+                JsonObject item = new JsonObject();
+                item.addProperty("method", "send");
+                item.addProperty("token", "dummy");
+                item.addProperty("type", "template");
+                item.add("payload", pushMessage);
+
+                JsonObject expectedPushMessage = new JsonObject();
+                expectedPushMessage.addProperty("user", "John Doe");
+
+                this.log("sending push message:" + item.toString());
+                client.invokeApi("Push", item).get();
+
+                if (PushMessageManager.instance.isPushMessageReceived(30000, expectedPushMessage).get()) {
+                    this.log("push received:" + expectedPushMessage.toString());
+                    return true;
+                } else {
+                    result.setStatus(TestStatus.Failed);
+                    callback.onTestComplete(this, result);
+                    return false;
                 }
             }
         };
@@ -552,7 +538,98 @@ public class PushTests extends TestGroup {
         return test;
     }
 
-    public ListenableFuture<JsonElement> verifyRegisterInstallationResult(MobileServiceClient client, ArrayList<Pair<String, String>> parameters) throws IOException {
+    private TestCase createPushWithTagsAndTemplateTest(String testName) {
+
+        TestCase test = new TestCase(testName) {
+
+            @Override
+            protected void executeTest(final MobileServiceClient client, final TestExecutionCallback callback) {
+
+                try {
+                    final TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+
+                    this.log("Starting createPushWithTagsAndTemplateTest");
+
+                    final MobileServicePush mobileServicePush = client.getPush();
+
+                    Installation installation = createInstallation(client);
+
+                    // register with installation
+                    mobileServicePush.register(installation);
+
+                    this.log("registration complete");
+
+                    // send push notification
+                    if (!sendPushNotification(client, callback, result)) {
+                        return;
+                    }
+
+                    mobileServicePush.unregister().get();
+                    this.log("OnCompleted.");
+                    callback.onTestComplete(this, result);
+                } catch (Exception e) {
+                    callback.onTestComplete(this, createResultFromException(e));
+                }
+            }
+
+            @NonNull
+            private Installation createInstallation(MobileServiceClient client) throws IOException {
+                String registrationId = getRegistrationId(client);
+                this.log("Acquired registrationId:" + registrationId);
+
+                ArrayList<String> tags = new ArrayList<>();
+                tags.add(TOPIC_SPORTS);
+
+                String platform = "gcm";
+                HashMap<String, String> pushVariables = null;
+                HashMap<String, InstallationTemplate> templates = new HashMap<>();
+                InstallationTemplate template = new InstallationTemplate("{\"data\":{\"message\":{\"user\":\"$(fullName)\"}}}", tags);
+                templates.put("GcmTemplate", template);
+
+                String installationId = MobileServiceApplication.getInstallationId(client.getContext());
+
+                return new Installation(installationId, platform, registrationId, pushVariables, tags, templates);
+            }
+
+            private boolean sendPushNotification(MobileServiceClient client, TestExecutionCallback callback, TestResult result) throws InterruptedException, java.util.concurrent.ExecutionException {
+                JsonObject item = new JsonObject();
+                item.addProperty("method", "send");
+                item.addProperty("token", "dummy");
+                item.addProperty("type", "gcm");
+
+                JsonObject sentPayload = new JsonObject();
+
+                JsonObject pushContent = new JsonObject();
+                pushContent.addProperty("sample", "message of sports");
+
+                JsonObject payload = new JsonObject();
+                payload.add("message", pushContent);
+
+                sentPayload.add("data", payload);
+                item.add("payload", sentPayload);
+                item.addProperty("tag", TOPIC_SPORTS);
+
+                this.log("sending push message:" + sentPayload.toString() + " with tag " + TOPIC_SPORTS);
+                client.invokeApi("Push", item).get();
+                if (PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                    this.log(sentPayload.toString() + " message received because we registered tag " + TOPIC_SPORTS);
+                    return true;
+                } else {
+                    result.setStatus(TestStatus.Failed);
+                    callback.onTestComplete(this, result);
+                    return false;
+                }
+            }
+        };
+
+        test.setName(testName);
+
+        return test;
+    }
+
+    private ListenableFuture<JsonElement> verifyRegisterInstallationResult(MobileServiceClient client, ArrayList<Pair<String, String>> parameters) throws IOException {
 
         final SettableFuture<JsonElement> resultFuture = SettableFuture.create();
         ListenableFuture<JsonElement> serviceFilterFuture = client.invokeApi("verifyRegisterInstallationResult", HttpConstants.GetMethod, parameters);
@@ -572,7 +649,7 @@ public class PushTests extends TestGroup {
         return resultFuture;
     }
 
-    public ListenableFuture<MobileServiceUser> getDummyUser(MobileServiceClient client) {
+    private ListenableFuture<MobileServiceUser> getDummyUser(MobileServiceClient client) {
 
         final SettableFuture<MobileServiceUser> resultFuture = SettableFuture.create();
         ListenableFuture<JsonElement> serviceFilterFuture = client.invokeApi("JwtTokenGenerator", HttpConstants.GetMethod, (ArrayList) null);
@@ -598,27 +675,27 @@ public class PushTests extends TestGroup {
         return resultFuture;
     }
 
-    public String getRegistrationId(MobileServiceClient client) throws IOException {
-        if (this.iid == null) {
-            this.iid = InstanceID.getInstance(client.getContext());
+    private String getRegistrationId(MobileServiceClient client) throws IOException {
+        if (instanceID == null) {
+            instanceID = InstanceID.getInstance(client.getContext());
         }
-        if (this.registrationId == null) {
+        if (registrationId == null) {
             String senderId = mainActivity.getGCMSenderId();
-            this.registrationId = iid.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+            registrationId = instanceID.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
         }
-        return this.registrationId;
+        return registrationId;
     }
 
-    public void clearRegistrationId() throws IOException {
-        if (this.iid == null || this.registrationId == null) {
+    private void clearRegistrationId() throws IOException {
+        if (instanceID == null || registrationId == null) {
             return;
         }
 
         registrationId = null;
-        iid.deleteInstanceID();
+        instanceID.deleteInstanceID();
     }
 
-    public ListenableFuture<JsonElement> verifyUnregisterInstallationResult(final MobileServiceClient client) {
+    private ListenableFuture<JsonElement> verifyUnregisterInstallationResult(final MobileServiceClient client) {
 
         final SettableFuture<JsonElement> resultFuture = SettableFuture.create();
 
@@ -639,7 +716,6 @@ public class PushTests extends TestGroup {
         return resultFuture;
     }
 
-
     private JsonObject GetTemplate() {
         String templateName = "GcmTemplate";
 
@@ -654,6 +730,11 @@ public class PushTests extends TestGroup {
 
         JsonObject bodyJson = new JsonObject();
         bodyJson.add("body", dataJson);
+
+        JsonArray tagsJsonArray = new JsonArray();
+        tagsJsonArray.add(new JsonPrimitive("topic:Sports"));
+
+        bodyJson.add("tags", tagsJsonArray);
 
         JsonObject templateJson = new JsonObject();
         templateJson.add(templateName, bodyJson);
