@@ -91,7 +91,7 @@ public class MobileServicePush {
     }
 
     /**
-     * Registers the client for template notifications with tags
+     * Registers the client for template notifications
      *
      * @param pnsHandle PNS specific identifier
      * @param templates Template to be used for registration
