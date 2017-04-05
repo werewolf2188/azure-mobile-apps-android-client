@@ -52,7 +52,8 @@ public class Installation {
     public String pushChannel;
 
     /**
-     * Installation expired or not
+     * Installation expired or not.
+     * Note this property is read-only for installation. It is ignored in installation create or update.
      */
     public boolean pushChannelExpired;
 
@@ -73,25 +74,25 @@ public class Installation {
 
     /**
      * Constructor for Installation
-     * @param expirationTime expiration time
      * @param installationId installation Id
      * @param platform platform
      * @param pushChannel registration Id, token or URI obtained from platform-specific notification service
-     * @param pushChannelExpired installation expired or not
      * @param pushVariables a collection of push variables
      * @param tags a list of tags
      * @param templates a collection of templates
+     * @param expirationTime expiration time
+     * @param pushChannelExpired installation expired or not
      */
-    public Installation(Date expirationTime, String installationId, String platform, String pushChannel,
-                        boolean pushChannelExpired, HashMap<String, String> pushVariables, List<String> tags, HashMap<String, InstallationTemplate> templates) {
-        this.expirationTime = expirationTime;
+    public Installation(String installationId, String platform, String pushChannel, HashMap<String, String> pushVariables, List<String> tags, HashMap<String, InstallationTemplate> templates,
+                        Date expirationTime, boolean pushChannelExpired) {
         this.installationId = installationId;
         this.platform = platform;
         this.pushChannel = pushChannel;
-        this.pushChannelExpired = pushChannelExpired;
         this.pushVariables = pushVariables;
         this.tags = tags;
         this.templates = templates;
+        this.expirationTime = expirationTime;
+        this.pushChannelExpired = pushChannelExpired;
     }
 
     /**
@@ -103,8 +104,7 @@ public class Installation {
      * @param tags a list of tags
      * @param templates a collection of templates
      */
-    public Installation(String installationId, String platform, String pushChannel,
-                        HashMap<String, String> pushVariables, List<String> tags, HashMap<String, InstallationTemplate> templates) {
-        this(null, installationId, platform, pushChannel, false, pushVariables, tags, templates);
+    public Installation(String installationId, String platform, String pushChannel, HashMap<String, String> pushVariables, List<String> tags, HashMap<String, InstallationTemplate> templates) {
+        this(installationId, platform, pushChannel, pushVariables, tags, templates, null, false);
     }
 }

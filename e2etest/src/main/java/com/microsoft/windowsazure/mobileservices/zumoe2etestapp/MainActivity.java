@@ -182,11 +182,12 @@ public class MainActivity extends Activity {
                         adapter.add(new UpdateDeleteTests());
                         adapter.add(new LoginTests(isNetBackend));
                         adapter.add(new MiscTests());
-                        // adapter.add(new PushTests());
                         adapter.add(new CustomApiTests());
                         adapter.add(new SystemPropertiesTests(isNetBackend));
                         adapter.add(new PushTests());
                         adapter.add(new OfflineTests());
+
+                        // TODO: Add ClientSDKLoginTests
 
                         ArrayList<Pair<TestCase, String>> allTests = new ArrayList<Pair<TestCase, String>>();
                         ArrayList<Pair<TestCase, String>> allUnattendedTests = new ArrayList<Pair<TestCase, String>>();

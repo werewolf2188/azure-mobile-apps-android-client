@@ -339,7 +339,7 @@ public class PushTests extends InstrumentationTestCase {
         tags.add("topics:my-first-tag");
         tags.add("topics:my-second-tag");
 
-        Installation installation = new Installation(new Date(), installationId, "gcm", handle, true, null, tags, null);
+        Installation installation = new Installation(installationId, "gcm", handle, null, tags, null, new Date(), true);
 
         String expectedContent =
                 "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
