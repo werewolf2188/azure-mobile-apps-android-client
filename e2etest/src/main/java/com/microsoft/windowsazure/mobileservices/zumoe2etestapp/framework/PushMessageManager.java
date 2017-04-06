@@ -19,29 +19,29 @@ public class PushMessageManager {
     }
 
     public final static PushMessageManager instance;
-    private List<JsonElement> pushMessages;
+    private List<JsonElement> receivedPushMessages;
 
     private PushMessageManager() {
-        pushMessages = new ArrayList<>();
+        receivedPushMessages = new ArrayList<>();
     }
 
     public synchronized boolean AddMessage(JsonElement message) {
-        return (pushMessages.add(message));
+        return (receivedPushMessages.add(message));
     }
 
     public synchronized boolean checkMessage(JsonElement message) {
         boolean result = false;
-        for (JsonElement msg: pushMessages) {
+        for (JsonElement msg: receivedPushMessages) {
             result = result || Util.compareJson(msg, message);
         }
         return result;
     }
 
     public synchronized void  clearMessages() {
-        pushMessages.clear();
+        receivedPushMessages.clear();
     }
 
-    public ListenableFuture<Boolean> isPushMessageReceived(final long timeout, final JsonElement message) {
+    public ListenableFuture<Boolean> isPushMessageReceived(final long timeout, final JsonElement expectedPushMessage) {
 
         final SettableFuture<Boolean> resultFuture = SettableFuture.create();
 
@@ -50,7 +50,7 @@ public class PushMessageManager {
 
             @Override
             public void run() {
-                if (!pushMessages.isEmpty() && checkMessage(message)) {
+                if (!receivedPushMessages.isEmpty() && checkMessage(expectedPushMessage)) {
                     this.cancel();
                     resultFuture.set(true);
                 } else {

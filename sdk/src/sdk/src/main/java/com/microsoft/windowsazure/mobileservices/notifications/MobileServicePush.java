@@ -18,9 +18,6 @@ Apache 2.0 License
 See the Apache Version 2.0 License for specific language governing permissions and limitations under the License.
  */
 
-/**
- * MobileServicePush.java
- */
 package com.microsoft.windowsazure.mobileservices.notifications;
 
 import android.content.Context;
@@ -31,10 +28,13 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.microsoft.windowsazure.mobileservices.MobileServiceApplication;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
+import com.microsoft.windowsazure.mobileservices.MobileServiceException;
 import com.microsoft.windowsazure.mobileservices.MobileServiceFeatures;
 import com.microsoft.windowsazure.mobileservices.http.HttpConstants;
 import com.microsoft.windowsazure.mobileservices.http.MobileServiceConnection;
@@ -95,10 +95,9 @@ public class MobileServicePush {
      *
      * @param pnsHandle PNS specific identifier
      * @param templates Template to be used for registration
-     * @return Future with TemplateRegistration Information
+     * @return Future with Registration Information
      */
     public ListenableFuture<Void> register(String pnsHandle, JsonObject templates) {
-
         final SettableFuture<Void> resultFuture = SettableFuture.create();
 
         if (isNullOrWhiteSpace(pnsHandle)) {
@@ -161,7 +160,33 @@ public class MobileServicePush {
     }
 
     /**
-     * Registers the client for template notifications
+     * Registers the client for push notification using device {@link Installation}
+     *
+     * @param installation device installation in Azure Notification Hub (https://msdn.microsoft.com/en-us/library/azure/mt621153.aspx)
+     * @return Future with registration information
+     */
+    public ListenableFuture<Void> register(Installation installation) {
+        final SettableFuture<Void> resultFuture = SettableFuture.create();
+
+        ListenableFuture<Void> registerInternalFuture = createOrUpdateInstallation(installation);
+
+        Futures.addCallback(registerInternalFuture, new FutureCallback<Void>() {
+            @Override
+            public void onFailure(Throwable exception) {
+                resultFuture.setException(exception);
+            }
+
+            @Override
+            public void onSuccess(Void v) {
+                resultFuture.set(v);
+            }
+        });
+
+        return resultFuture;
+    }
+
+    /**
+     * Registers the client for template notifications with tags
      *
      * @param pnsHandle    PNS specific identifier
      * @param templateName The template name
@@ -169,7 +194,6 @@ public class MobileServicePush {
      * @return Future with TemplateRegistration Information
      */
     public ListenableFuture<Void> registerTemplate(String pnsHandle, String templateName, String templateBody) {
-
         final SettableFuture<Void> resultFuture = SettableFuture.create();
 
         if (isNullOrWhiteSpace(pnsHandle)) {
@@ -301,11 +325,79 @@ public class MobileServicePush {
         return resultFuture;
     }
 
-    private ListenableFuture<Void> createOrUpdateInstallation(String pnsHandle) {
-        return createOrUpdateInstallation(pnsHandle, null);
+    private JsonObject convertInstallationToJson(Installation installation) {
+
+        // installationId, pushChannel and platform are the required properties in Installation object.
+        // Make sure installation object is valid.
+        if (installation == null || isNullOrWhiteSpace(installation.installationId) || isNullOrWhiteSpace(installation.pushChannel) || isNullOrWhiteSpace(installation.platform)) {
+            return null;
+        }
+
+        JsonObject installationJson = new JsonObject();
+
+        installationJson.addProperty("installationId", installation.installationId);
+        installationJson.addProperty("pushChannel", installation.pushChannel);
+        installationJson.addProperty("platform", installation.platform);
+
+        // expirationTime is a read-only property that can be set at NotificationHubs level create or update.
+        // Ignore expirationTime in create or update installation.
+        installationJson.addProperty("expirationTime", "");
+
+        if (installation.pushVariables != null) {
+            JsonObject pushVariables = new JsonObject();
+            for (Map.Entry<String, String> entry : installation.pushVariables.entrySet()) {
+                pushVariables.addProperty(entry.getKey(), entry.getValue());
+            }
+            installationJson.add("pushVariables", pushVariables);
+        }
+        if (installation.tags != null) {
+            JsonArray tagsArray = new JsonArray();
+            for (String tag : installation.tags) {
+                tagsArray.add(new JsonPrimitive(tag));
+            }
+            installationJson.add("tags", tagsArray);
+        }
+
+        if (installation.templates != null) {
+            JsonObject templates = new JsonObject();
+            for (Map.Entry<String, InstallationTemplate> entry : installation.templates.entrySet()) {
+                JsonObject template = new JsonObject();
+                if (entry.getValue().body != null) {
+                    template.addProperty("body", entry.getValue().body);
+                }
+                if (entry.getValue().tags != null) {
+                    JsonArray tagsArray = new JsonArray();
+                    for (String tag : entry.getValue().tags) {
+                        tagsArray.add(new JsonPrimitive(tag));
+                    }
+                    template.add("tags", tagsArray);
+                }
+                templates.add(entry.getKey(), template);
+            }
+            installationJson.add("templates", templates);
+        }
+
+        return installationJson;
+    }
+
+    private ListenableFuture<Void> createOrUpdateInstallation(Installation installation) {
+
+        SettableFuture<Void> resultFuture = SettableFuture.create();
+
+        JsonObject installationJson = convertInstallationToJson(installation);
+        if (installationJson == null) {
+            resultFuture.setException(new MobileServiceException("Error with create or update installation. installationId, pushChannel or platform of installation can't be NULL."));
+            return resultFuture;
+        }
+        String installationJsonString = installationJson.toString();
+
+        return createOrUpdateInstallationInternal(installationJsonString, resultFuture);
     }
 
     private ListenableFuture<Void> createOrUpdateInstallation(String pnsHandle, JsonElement templates) {
+
+        SettableFuture<Void> resultFuture = SettableFuture.create();
+
         JsonObject installation = new JsonObject();
         installation.addProperty("pushChannel", pnsHandle);
         installation.addProperty("platform", "gcm");
@@ -314,17 +406,22 @@ public class MobileServicePush {
             installation.add("templates", templates);
         }
 
-        final SettableFuture<Void> resultFuture = SettableFuture.create();
+        String installationJsonString = installation.toString();
+
+        return createOrUpdateInstallationInternal(installationJsonString, resultFuture);
+    }
+
+    private ListenableFuture<Void> createOrUpdateInstallationInternal(String installationJsonString, final SettableFuture<Void> resultFuture) {
 
         String installationId = MobileServiceApplication.getInstallationId(mHttpClient.getClient().getContext());
 
         String path = PNS_API_URL + "/installations/" + Uri.encode(installationId);
 
-        List<Pair<String, String>> requestHeaders = new ArrayList<Pair<String, String>>();
+        List<Pair<String, String>> requestHeaders = new ArrayList<>();
 
         requestHeaders.add(new Pair<>(HttpConstants.ContentType, MobileServiceConnection.JSON_CONTENTTYPE));
 
-        ListenableFuture<ServiceFilterResponse> serviceFilterFuture = mHttpClient.request(path, installation.toString(), HttpConstants.PutMethod, requestHeaders, null, EnumSet.noneOf(MobileServiceFeatures.class));
+        ListenableFuture<ServiceFilterResponse> serviceFilterFuture = mHttpClient.request(path, installationJsonString, HttpConstants.PutMethod, requestHeaders, null, EnumSet.noneOf(MobileServiceFeatures.class));
 
         Futures.addCallback(serviceFilterFuture, new FutureCallback<ServiceFilterResponse>() {
             @Override
@@ -342,5 +439,4 @@ public class MobileServicePush {
 
         return resultFuture;
     }
-
 }
