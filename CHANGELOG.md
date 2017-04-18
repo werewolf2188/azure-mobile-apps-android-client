@@ -1,5 +1,10 @@
 # Azure Mobile Services Android SDK Change Log
 
+### Android SDK: Version 3.3.0
+- [#87](https://github.com/Azure/azure-mobile-apps-android-client/pull/87) Fix IncrementalPullStrategy to handle date format without milliseconds
+- [#88](https://github.com/Azure/azure-mobile-apps-android-client/pull/88) Support Refresh Tokens in server login flow for identity provider Google, AAD and MicrosoftAccount
+- [#91](https://github.com/Azure/azure-mobile-apps-android-client/pull/91) Support Register the client for push notification using device Installation
+
 ### Android SDK: Version 3.2.0
 - [#84](https://github.com/Azure/azure-mobile-apps-android-client/pull/84) Support server login flow using Chrome CustomTabs. Google recently [announced](https://developers.googleblog.com/2016/08/modernizing-oauth-interactions-in-native-apps.html) the deprecation of Google OAuth login using webview. Azure Mobile Apps server login flow should use CustomTabs implementation `MobileServiceClient.login(String provider, String uriScheme, int authRequestCode)` instead of webview implementation `MobileServiceClient.login(String provider)`.
 - [#63](https://github.com/Azure/azure-mobile-apps-android-client/pull/63) Fix page size bug for [#61](https://github.com/Azure/azure-mobile-apps-android-client/pull/61)
