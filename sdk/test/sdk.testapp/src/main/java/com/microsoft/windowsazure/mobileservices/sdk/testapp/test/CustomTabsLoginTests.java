@@ -53,6 +53,7 @@ import junit.framework.Assert;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -181,7 +182,25 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
         String codeVerifier = "67890";
         CustomTabsLoginState loginState = new CustomTabsLoginState(uriScheme, codeVerifier, provider, appUrl, null, null, parameters);
 
-        assertEquals(expectedUri, (Uri) method.invoke(null, loginState));
+        assertUriEquals(expectedUri, (Uri) method.invoke(null, loginState));
+    }
+
+    /**
+     * Compare URIs with ignore parameters order.
+     */
+    private void assertUriEquals(Uri uri1, Uri uri2) {
+        assertEquals(uri1.getScheme(), uri2.getScheme());
+        assertEquals(uri1.getAuthority(), uri2.getAuthority());
+        assertEquals(uri1.getHost(), uri2.getHost());
+        assertEquals(uri1.getPort(), uri2.getPort());
+        assertEquals(uri1.getPath(), uri2.getPath());
+        String[] params1 = uri1.getQuery().split("&");
+        String[] params2 = uri2.getQuery().split("&");
+        assertEquals(params1.length, params2.length);
+        Arrays.sort(params1);
+        Arrays.sort(params2);
+        assertTrue("Parameters are not equal", Arrays.equals(params1, params2));
+        assertEquals(uri1.getFragment(), uri2.getFragment());
     }
 
     public void testBuildUrlPathWithLoginUriPrefixAndAlternateLoginHost() throws Throwable {
