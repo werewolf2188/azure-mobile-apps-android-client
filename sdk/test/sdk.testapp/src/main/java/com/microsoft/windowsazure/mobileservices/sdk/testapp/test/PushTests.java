@@ -45,6 +45,7 @@ import junit.framework.Assert;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.concurrent.ExecutionException;
 
 public class PushTests extends InstrumentationTestCase {
@@ -354,7 +355,7 @@ public class PushTests extends InstrumentationTestCase {
         ArrayList<String> tags = new ArrayList<>();
         tags.add("topics:my-first-tag");
         tags.add("topics:my-second-tag");
-        HashMap<String, String> pushVariables = new HashMap<>();
+        HashMap<String, String> pushVariables = new LinkedHashMap<>();
         pushVariables.put("key1", "value1");
         pushVariables.put("key2", "value2");
         HashMap<String, InstallationTemplate> templates = new HashMap<>();
@@ -364,7 +365,7 @@ public class PushTests extends InstrumentationTestCase {
         Installation installation = new Installation(installationId, "gcm", handle, pushVariables, tags, templates);
 
         String expectedContent =
-                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"pushVariables\":{\"key2\":\"value2\",\"key1\":\"value1\"},\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"],\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"pushVariables\":{\"key1\":\"value1\",\"key2\":\"value2\"},\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"],\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
 
         this.testRegisterInstallation(installation, expectedContent);
     }
