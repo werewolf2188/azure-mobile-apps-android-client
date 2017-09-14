@@ -294,7 +294,7 @@ public class MainActivity extends Activity {
 
     private void changeCheckAllTests(boolean check) {
         TestGroup tg = (TestGroup) mTestGroupSpinner.getSelectedItem();
-        if (tg ==  null) {
+        if (tg == null) {
             return;
         }
 
