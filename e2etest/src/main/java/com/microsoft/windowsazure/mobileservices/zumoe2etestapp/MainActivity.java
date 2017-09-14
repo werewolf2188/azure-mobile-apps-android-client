@@ -294,6 +294,10 @@ public class MainActivity extends Activity {
 
     private void changeCheckAllTests(boolean check) {
         TestGroup tg = (TestGroup) mTestGroupSpinner.getSelectedItem();
+        if (tg ==  null) {
+            return;
+        }
+
         List<TestCase> testCases = tg.getTestCases();
 
         for (TestCase testCase : testCases) {
