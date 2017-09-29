@@ -32,7 +32,7 @@ To get the source code of our SDKs and samples via **git** just type:
     cd ./azure-mobile-apps-android-client/
 
 ## Reference Documentation
-- [Reference documentation (Java docs)]  (http://azure.github.io/azure-mobile-apps-android-client/)
+- [Reference documentation (Java docs)](http://azure.github.io/azure-mobile-apps-android-client/)
 - [Change Log](CHANGELOG.md)
 
 ## Android SDK
