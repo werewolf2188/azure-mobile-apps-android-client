@@ -155,18 +155,25 @@ public class OperationErrorList {
         String tableName = element.get("tablename").getAsString();
         String itemId = element.get("itemid").getAsString();
         String errorMessage = element.get("errormessage").getAsString();
-        Integer statusCode = element.get("statuscode") != null ? element.get("statuscode").getAsInt() : null;
-        String serverResponse = element.get("serverresponse") != null ? element.get("serverresponse").getAsString() : null;
+
+        Integer statusCode = null;
+        if (element.get("statuscode") != null && !element.get("statuscode").isJsonNull()) {
+            statusCode = element.get("statuscode").getAsInt();
+        }
+
+        String serverResponse = null;
+        if (element.get("serverresponse") != null && !element.get("serverresponse").isJsonNull()) {
+            serverResponse = element.get("serverresponse").getAsString();
+        }
+
         Date createdAt = DateSerializer.deserialize(element.get(MobileServiceSystemColumns.CreatedAt).getAsString());
 
         JsonObject clientItem = null;
-
         if (element.get("clientitem") != null && !element.get("clientitem").isJsonNull()) {
             clientItem = element.get("clientitem").getAsJsonObject();
         }
 
         JsonObject serverItem = null;
-
         if (element.get("serveritem") != null && !element.get("serveritem").isJsonNull()) {
             serverItem = element.get("serveritem").getAsJsonObject();
         }
