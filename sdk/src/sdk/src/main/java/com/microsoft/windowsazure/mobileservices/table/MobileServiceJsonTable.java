@@ -403,7 +403,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
 
             @Override
             public void onSuccess(Pair<JsonElement, ServiceFilterResponse> results) {
-                if (results.first.isJsonArray()) {
+                if (!results.first.isJsonObject()) {
                     // empty result
                     future.setException(new MobileServiceException("A record with the specified Id cannot be found", results.second));
                 } else {
@@ -880,7 +880,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
     /**
      * Executes the query against the table
      *
-     * @param request        Request to execute
+     * @param path           Request to execute
      * @param content        The content of the request body
      * @param httpMethod     The method of the HTTP request
      * @param requestHeaders Additional request headers used in the HTTP request
@@ -937,7 +937,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
     /**
      * Retrieves a set of rows from using the specified URL
      *
-     * @param query    The URL used to retrieve the rows
+     * @param url      The URL used to retrieve the rows
      * @param features The features used in this request
      */
     private ListenableFuture<Pair<JsonElement, ServiceFilterResponse>> executeGetRecords(final String url, EnumSet<MobileServiceFeatures> features) {
