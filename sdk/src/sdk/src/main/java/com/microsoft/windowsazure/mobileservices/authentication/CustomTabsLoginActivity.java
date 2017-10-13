@@ -21,6 +21,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
 package com.microsoft.windowsazure.mobileservices.authentication;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -149,8 +150,12 @@ public class CustomTabsLoginActivity extends Activity {
         if (mLoginState != null) {
             Uri loginUri = buildLoginUri(mLoginState);
             if (loginUri != null) {
-                Intent loginIntent = createLoginIntent(loginUri);
-                startActivity(loginIntent);
+                try {
+                    Intent loginIntent = createLoginIntent(loginUri);
+                    startActivity(loginIntent);
+                } catch (ActivityNotFoundException e) {
+                    return false;
+                }
                 mLoginInProgress = true;
                 return true;
             }
