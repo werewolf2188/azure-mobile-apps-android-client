@@ -116,12 +116,10 @@ public class OfflineTests extends TestGroup {
         logOutTest2.setCanRunUnattended(false);
         this.addTest(logOutTest2);
 
-        this.addTest(createOfflineIncrementalSyncTest(null, false, false));
+        this.addTest(createOfflineIncrementalSyncTest(null, false));
 
-        this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", false, false));
-        this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", false, true));
-        this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", true, false));
-        this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", true, true));
+        this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", false));
+        this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", true));
 
     }
 
@@ -1391,7 +1389,7 @@ public class OfflineTests extends TestGroup {
         return test;
     }
 
-    private TestCase createOfflineIncrementalSyncTest(final String queryKey, final boolean cleanStore, final boolean complexQuery) {
+    private TestCase createOfflineIncrementalSyncTest(final String queryKey, final boolean cleanStore) {
 
         final String tableName = "offlineReady";
 
@@ -1500,12 +1498,6 @@ public class OfflineTests extends TestGroup {
             testName += "  - Clear Store";
         } else {
             testName += "  - Maintain Store";
-        }
-
-        if (complexQuery) {
-            testName += "  - Complex Query";
-        } else {
-            testName += "  - Simple Query";
         }
 
         test.setName(testName);
