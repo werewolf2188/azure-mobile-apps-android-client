@@ -937,13 +937,13 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
     /**
      * Retrieves a set of rows from using the specified URL
      *
-     * @param query    The URL used to retrieve the rows
+     * @param url      The URL used to retrieve the rows
      * @param features The features used in this request
      */
     private ListenableFuture<Pair<JsonElement, ServiceFilterResponse>> executeGetRecords(final String url, EnumSet<MobileServiceFeatures> features) {
         final SettableFuture<Pair<JsonElement, ServiceFilterResponse>> future = SettableFuture.create();
 
-        ServiceFilterRequest request = ServiceFilterRequestImpl.get(mClient.getOkHttpClientFactory(), url );
+        ServiceFilterRequest request = ServiceFilterRequestImpl.get(mClient.getOkHttpClientFactory(), url);
 
         String featuresHeader = MobileServiceFeatures.featuresToString(features);
         if (featuresHeader != null) {
