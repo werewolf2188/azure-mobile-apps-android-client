@@ -12,7 +12,7 @@ import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
 public class PullStrategy {
 
     static final int defaultTop = 50;
-    static final int maxTop = 500;
+    static final int maxTop = 1000;
 
     Query query;
     MobileServiceJsonTable table;
