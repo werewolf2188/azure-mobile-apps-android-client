@@ -943,7 +943,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
     private ListenableFuture<Pair<JsonElement, ServiceFilterResponse>> executeGetRecords(final String url, EnumSet<MobileServiceFeatures> features) {
         final SettableFuture<Pair<JsonElement, ServiceFilterResponse>> future = SettableFuture.create();
 
-        ServiceFilterRequest request = ServiceFilterRequestImpl.get(mClient.getOkHttpClientFactory(), url );
+        ServiceFilterRequest request = ServiceFilterRequestImpl.get(mClient.getOkHttpClientFactory(), url);
 
         String featuresHeader = MobileServiceFeatures.featuresToString(features);
         if (featuresHeader != null) {

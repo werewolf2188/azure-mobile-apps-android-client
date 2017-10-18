@@ -11,7 +11,19 @@ import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
  */
 public class PullStrategy {
 
-    int defaultTop = 50;
+    /**
+     * Default number of records.
+     *
+     * @see Query#top(int)
+     */
+    static final int defaultTop = 50;
+
+    /**
+     * Limit the maximum number of records.
+     *
+     * @see Query#top(int)
+     */
+    static final int maxTop = 1000;
 
     Query query;
     MobileServiceJsonTable table;
@@ -32,7 +44,7 @@ public class PullStrategy {
         if (this.query.getTop() == 0) {
             this.query.top(defaultTop);
         } else {
-            this.query.top(Math.min(this.query.getTop(), defaultTop));
+            this.query.top(Math.min(this.query.getTop(), maxTop));
         }
 
         if (query.getOrderBy().size() == 0) {
@@ -45,7 +57,6 @@ public class PullStrategy {
     }
 
     public void onResultsProcessed(JsonArray elements) {
-        return;
     }
 
     public boolean moveToNextPage(int lastElementCount) {

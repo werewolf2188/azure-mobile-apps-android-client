@@ -32,13 +32,11 @@ public class IncrementalPullStrategy extends PullStrategy {
     private DateTimeOffset deltaToken;
     private String queryId;
     private Query originalQuery;
-    private MobileServiceJsonTable table;
 
     public IncrementalPullStrategy(Query query, String queryId, MobileServiceLocalStore localStore, MobileServiceJsonTable table) {
         super(query, table);
         this.mStore = localStore;
         this.queryId = queryId;
-        this.table = table;
     }
 
     public static void initializeStore(MobileServiceLocalStore store) throws MobileServiceLocalStoreException {
@@ -81,9 +79,6 @@ public class IncrementalPullStrategy extends PullStrategy {
                 }
             }
 
-            this.query.skip(-1);
-            this.query.top(defaultTop);
-
             setupQuery(maxUpdatedAt);
 
         } catch (MobileServiceLocalStoreException e) {
@@ -115,8 +110,6 @@ public class IncrementalPullStrategy extends PullStrategy {
 
             deltaToken = maxUpdatedAt;
 
-            this.query.skip(-1);
-
             setupQuery(maxUpdatedAt);
 
             return true;
@@ -144,7 +137,7 @@ public class IncrementalPullStrategy extends PullStrategy {
         totalRead = 0;
         this.query = originalQuery.deepClone();
 
-        if (query.getOrderBy().size() > 0) {
+        if (this.query.getOrderBy().size() > 0) {
             this.query.getOrderBy().clear();
         }
 
@@ -163,10 +156,13 @@ public class IncrementalPullStrategy extends PullStrategy {
             }
         }
 
-        this.query.top(defaultTop);
+        if (this.query.getTop() == 0) {
+            this.query.top(defaultTop);
+        } else {
+            this.query.top(Math.min(query.getTop(), maxTop));
+        }
 
         this.query.getOrderBy().clear();
-
         this.query.orderBy(MobileServiceSystemColumns.UpdatedAt, QueryOrder.Ascending);
     }
 
