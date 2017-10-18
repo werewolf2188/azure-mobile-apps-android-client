@@ -2301,7 +2301,7 @@ public class MobileServiceTableTests extends InstrumentationTestCase {
             }
         });
 
-        JsonObject jsonEntity = (JsonObject) client.getTable(tableName).lookUp(personId).get();
+        JsonObject jsonEntity = client.getTable(tableName).lookUp(personId).get();
 
         // Asserts
         assertEquals(personJsonString, jsonEntity.toString());
@@ -2456,6 +2456,54 @@ public class MobileServiceTableTests extends InstrumentationTestCase {
             // Asserts
             assertEquals(this.appUrl + "tables/" + tableName + "/" + personId, container.getRequestUrl());
             assertTrue(container.getResponseValue().contains("{\"error\":404,\"message\":\"entity does not exist\"}"));
+        }
+    }
+
+
+    public void testLookupShouldReturnErrorIfJSONIsNotAnObject() throws Throwable {
+
+        // Container to store callback's results and do the asserts.
+        final ResultsContainer container = new ResultsContainer();
+
+        // Person Id
+        final int personId = 4;
+        final String tableName = "MyTableName";
+
+        MobileServiceClient client = null;
+        try {
+            client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        client = client.withFilter(new ServiceFilter() {
+
+            @Override
+            public ListenableFuture<ServiceFilterResponse> handleRequest(ServiceFilterRequest request, NextServiceFilterCallback nextServiceFilterCallback) {
+                // Store the request URL
+                container.setRequestUrl(request.getUrl());
+
+                // Create a mock response and set the mocked JSon
+                // content
+                ServiceFilterResponseMock response = new ServiceFilterResponseMock();
+                response.setContent("null");
+
+                final SettableFuture<ServiceFilterResponse> resultFuture = SettableFuture.create();
+
+                resultFuture.set(response);
+
+                return resultFuture;
+            }
+        });
+
+        try {
+            client.getTable(tableName).lookUp(personId).get();
+        } catch (ExecutionException exception) {
+            // Asserts
+            assertEquals(this.appUrl + "tables/" + tableName + "/" + personId, container.getRequestUrl());
+            assertNotNull(exception.getCause());
+            assertTrue(exception.getCause() instanceof MobileServiceException);
+            assertEquals("A record with the specified Id cannot be found", exception.getCause().getMessage());
         }
     }
 
