@@ -150,8 +150,8 @@ public class CustomTabsLoginActivity extends Activity {
         if (mLoginState != null) {
             Uri loginUri = buildLoginUri(mLoginState);
             if (loginUri != null) {
+                Intent loginIntent = createLoginIntent(loginUri);
                 try {
-                    Intent loginIntent = createLoginIntent(loginUri);
                     startActivity(loginIntent);
                 } catch (ActivityNotFoundException e) {
                     return false;
