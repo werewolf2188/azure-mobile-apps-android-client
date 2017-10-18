@@ -267,13 +267,13 @@ public class LoginManager {
 
                         user = createUserFromJSON(json);
                     } catch (Exception e) {
-                        future.setException(e);
+                        future.setException(new MobileServiceException("Error while authenticating user.", e));
                         return;
                     }
 
                     future.set(user);
                 } else {
-                    future.setException(exception);
+                    future.setException(new MobileServiceException("Error while authenticating user.", exception));
                 }
             }
         });
