@@ -880,7 +880,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
     /**
      * Executes the query against the table
      *
-     * @param path           Request to execute
+     * @param path           The path of the request URI
      * @param content        The content of the request body
      * @param httpMethod     The method of the HTTP request
      * @param requestHeaders Additional request headers used in the HTTP request
