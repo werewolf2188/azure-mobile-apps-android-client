@@ -11,7 +11,18 @@ import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
  */
 public class PullStrategy {
 
+    /**
+     * Default number of records.
+     *
+     * @see Query#top(int)
+     */
     static final int defaultTop = 50;
+
+    /**
+     * Limit the maximum number of records.
+     *
+     * @see Query#top(int)
+     */
     static final int maxTop = 1000;
 
     Query query;
