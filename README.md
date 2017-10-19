@@ -38,7 +38,7 @@ To get the source code of our SDKs and samples via **git** just type:
 ## Android SDK
 Microsoft Azure Mobile Services can be used with an Android-based device using our Android SDK. You can get the Android SDK in one of the following two ways or you can download the source code using the instructions above.
 
-1. For an Android studio project, add the line `compile 'com.microsoft.azure:azure-mobile-android:3.3.0@aar'` to the app’s Gradle.build file with your desired SDK version plugged in (you can find the latest versions [here](https://go.microsoft.com/fwLink/?LinkID=525472&clcid=0x409)):
+1. For an Android studio project, add the line `compile 'com.microsoft.azure:azure-mobile-android:3.4.0@aar'` to the app’s Gradle.build file with your desired SDK version plugged in (you can find the latest versions [here](https://go.microsoft.com/fwLink/?LinkID=525472&clcid=0x409)):
 2. Eclipse users can [download the Android SDK](http://go.microsoft.com/fwlink/?LinkID=717033&clcid=0x409) directly or can download the source code using the instructions above.
 
 ### Prerequisites
