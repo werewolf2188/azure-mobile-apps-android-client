@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
 import com.microsoft.windowsazure.mobileservices.MobileServiceException;
 import com.microsoft.windowsazure.mobileservices.http.HttpConstants;
@@ -44,6 +45,7 @@ import com.microsoft.windowsazure.mobileservices.table.MobileServiceExceptionBas
 import com.microsoft.windowsazure.mobileservices.table.query.Query;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOperations;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
+import com.microsoft.windowsazure.mobileservices.table.serialization.DateSerializer;
 import com.microsoft.windowsazure.mobileservices.table.sync.MobileServiceJsonSyncTable;
 import com.microsoft.windowsazure.mobileservices.table.sync.MobileServiceSyncTable;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.MobileServiceTableOperationState;
@@ -65,6 +67,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 public class MobileServiceSyncTableTests extends InstrumentationTestCase {
@@ -815,6 +818,32 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     public void testOperationErrorLoadCorrectly() throws Throwable {
 
         MobileServiceLocalStoreMock store = new MobileServiceLocalStoreMock();
+
+        String jsonWithoutOptionalObjects = "{\n" +
+                "\"id\":\""+ UUID.randomUUID().toString()+"\",\n" +
+                "\"operationId\":\"SomeId\",\n" +
+                "\"operationkind\":1,\n" +
+                "\"tablename\":\"SomeTable\",\n" +
+                "\"itemid\":\"SomeItem\",\n" +
+                "\"errormessage\":\"SomeError\",\n" +
+                "\"createdAt\":\""+ DateSerializer.serialize(new Date()) +"\"\n" +
+                "}";
+        store.upsert(MobileServiceLocalStoreMock.SyncErrors, (JsonObject) new JsonParser().parse(jsonWithoutOptionalObjects), true);
+
+        String jsonWithNullObjects = "{\n" +
+                "\"id\":\""+ UUID.randomUUID().toString()+"\",\n" +
+                "\"operationId\":\"SomeId\",\n" +
+                "\"operationkind\":1,\n" +
+                "\"tablename\":\"SomeTable\",\n" +
+                "\"itemid\":\"SomeItem\",\n" +
+                "\"errormessage\":\"SomeError\",\n" +
+                "\"statuscode\":null,\n" +
+                "\"createdAt\":\""+ DateSerializer.serialize(new Date()) +"\",\n" +
+                "\"serverresponse\":null,\n" +
+                "\"clientitem\":null,\n" +
+                "\"serveritem\":null\n" +
+                "}";
+        store.upsert(MobileServiceLocalStoreMock.SyncErrors, (JsonObject) new JsonParser().parse(jsonWithNullObjects), true);
 
         OperationErrorList operationErrorList = OperationErrorList.load(store);
 
