@@ -72,7 +72,7 @@ public class MobileServiceConnection {
     /**
      * Current SDK version
      */
-    private static final String SDK_VERSION = "3.3.0";
+    private static final String SDK_VERSION = "3.4.0";
     /**
      * The MobileServiceClient used for communication with the Mobile Service
      */

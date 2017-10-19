@@ -1,5 +1,13 @@
 # Azure Mobile Services Android SDK Change Log
 
+### Android SDK: Version 3.4.0
+- Support for Android 8
+- [#116](https://github.com/Azure/azure-mobile-apps-android-client/pull/116) Allow to specify PullStrategy top higher than 50
+- [#115](https://github.com/Azure/azure-mobile-apps-android-client/pull/115), [#113](https://github.com/Azure/azure-mobile-apps-android-client/pull/113), [1b2bd70](https://github.com/Azure/azure-mobile-apps-android-client/commit/1b2bd70856577fdc69c596f7db55aea435eb36ec) Fix parsing of json responses
+- [#114](https://github.com/Azure/azure-mobile-apps-android-client/pull/114) Handle exception at begin login flow when there are no browsers on the device
+- [#112](https://github.com/Azure/azure-mobile-apps-android-client/pull/112) Add detail message to auth exception
+- [#119](https://github.com/Azure/azure-mobile-apps-android-client/pull/119) Fix ISO-8601 formatted date parsing
+
 ### Android SDK: Version 3.3.0
 - [#87](https://github.com/Azure/azure-mobile-apps-android-client/pull/87) Fix IncrementalPullStrategy to handle date format without milliseconds
 - [#88](https://github.com/Azure/azure-mobile-apps-android-client/pull/88) Support Refresh Tokens in server login flow for identity provider Google, AAD and MicrosoftAccount
