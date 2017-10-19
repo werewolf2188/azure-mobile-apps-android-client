@@ -101,6 +101,12 @@ public class RoundTripTests extends TestGroup {
 
         this.addTest(createSimpleTypedRoundTripTest("Date: now", calendar.getTime(), Date.class));
         this.addTest(createSimpleTypedRoundTripTest("Date: now (UTC)", calendarUTC.getTime(), Date.class));
+
+        this.addTest(createSimpleTypedRoundTripTest("Date: with .000 milliseconds", new Date(1500000000000L), Date.class));
+        this.addTest(createSimpleTypedRoundTripTest("Date: with .001 milliseconds", new Date(1500000000001L), Date.class));
+        this.addTest(createSimpleTypedRoundTripTest("Date: with .010 milliseconds", new Date(1500000000010L), Date.class));
+        this.addTest(createSimpleTypedRoundTripTest("Date: with .100 milliseconds", new Date(1500000000100L), Date.class));
+
         // this.addTest(createSimpleTypedRoundTripTest("Date: null", null,
         // Date.class));
         this.addTest(createSimpleTypedRoundTripTest("Date: min date", minCalendar.getTime(), Date.class));
@@ -165,6 +171,12 @@ public class RoundTripTests extends TestGroup {
 
         this.addTest(createSimpleUntypedRoundTripTest("Untyped Date: now", Util.dateToString(calendar.getTime()), Date.class));
         this.addTest(createSimpleUntypedRoundTripTest("Untyped Date: now (UTC)", Util.dateToString(calendarUTC.getTime()), Date.class));
+
+        this.addTest(createSimpleUntypedRoundTripTest("Untyped Date: with .000 milliseconds", Util.dateToString(new Date(1500000000000L)), Date.class));
+        this.addTest(createSimpleUntypedRoundTripTest("Untyped Date: with .001 milliseconds", Util.dateToString(new Date(1500000000001L)), Date.class));
+        this.addTest(createSimpleUntypedRoundTripTest("Untyped Date: with .010 milliseconds", Util.dateToString(new Date(1500000000010L)), Date.class));
+        this.addTest(createSimpleUntypedRoundTripTest("Untyped Date: with .100 milliseconds", Util.dateToString(new Date(1500000000100L)), Date.class));
+
         // this.addTest(createSimpleUntypedRoundTripTest("Untyped Date: null",
         // null, Date.class));
         this.addTest(createSimpleUntypedRoundTripTest("Untyped Date: min date", Util.dateToString(minCalendar.getTime()), Date.class));
