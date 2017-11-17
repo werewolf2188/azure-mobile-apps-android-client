@@ -33,8 +33,8 @@ import com.microsoft.windowsazure.mobileservices.sdk.testapp.framework.filters.S
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.framework.filters.ServiceFilterResponseMock;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.test.types.PersonTestObject;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.test.types.ResultsContainer;
-import com.squareup.okhttp.Protocol;
-import com.squareup.okhttp.internal.http.StatusLine;
+import okhttp3.Protocol;
+import okhttp3.internal.http.StatusLine;
 
 import java.net.MalformedURLException;
 

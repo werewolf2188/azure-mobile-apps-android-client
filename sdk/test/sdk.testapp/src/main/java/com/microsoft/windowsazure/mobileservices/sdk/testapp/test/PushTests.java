@@ -37,8 +37,8 @@ import com.microsoft.windowsazure.mobileservices.notifications.InstallationTempl
 import com.microsoft.windowsazure.mobileservices.notifications.MobileServicePush;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.framework.filters.ServiceFilterRequestMock;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.framework.filters.ServiceFilterResponseMock;
-import com.squareup.okhttp.Protocol;
-import com.squareup.okhttp.internal.http.StatusLine;
+import okhttp3.Protocol;
+import okhttp3.internal.http.StatusLine;
 
 import junit.framework.Assert;
 

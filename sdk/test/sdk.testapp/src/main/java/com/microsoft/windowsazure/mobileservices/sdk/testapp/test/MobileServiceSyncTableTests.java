@@ -55,8 +55,8 @@ import com.microsoft.windowsazure.mobileservices.table.sync.push.MobileServicePu
 import com.microsoft.windowsazure.mobileservices.table.sync.push.MobileServicePushStatus;
 import com.microsoft.windowsazure.mobileservices.table.sync.queue.OperationErrorList;
 import com.microsoft.windowsazure.mobileservices.table.sync.synchandler.SimpleSyncHandler;
-import com.squareup.okhttp.Protocol;
-import com.squareup.okhttp.internal.http.StatusLine;
+import okhttp3.Protocol;
+import okhttp3.internal.http.StatusLine;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -3668,7 +3668,7 @@ public class MobileServiceSyncTableTests extends InstrumentationTestCase {
     }
 
     public class ServiceFilterRequestData {
-        public com.squareup.okhttp.Headers Headers;
+        public okhttp3.Headers Headers;
 
         public String Content;
 

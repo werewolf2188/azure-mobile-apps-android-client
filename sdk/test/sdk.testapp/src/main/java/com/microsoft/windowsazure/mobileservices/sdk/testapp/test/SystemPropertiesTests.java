@@ -48,9 +48,9 @@ import com.microsoft.windowsazure.mobileservices.sdk.testapp.test.types.data.Sys
 import com.microsoft.windowsazure.mobileservices.table.MobileServiceJsonTable;
 import com.microsoft.windowsazure.mobileservices.table.MobileServiceSystemProperty;
 import com.microsoft.windowsazure.mobileservices.table.MobileServiceTable;
-import com.squareup.okhttp.Headers;
-import com.squareup.okhttp.Protocol;
-import com.squareup.okhttp.internal.http.StatusLine;
+import okhttp3.Headers;
+import okhttp3.Protocol;
+import okhttp3.internal.http.StatusLine;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;

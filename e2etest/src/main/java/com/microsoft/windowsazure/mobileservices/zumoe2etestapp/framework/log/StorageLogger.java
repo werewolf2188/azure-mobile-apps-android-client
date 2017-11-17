@@ -25,10 +25,10 @@ import android.util.Base64;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestCase;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;

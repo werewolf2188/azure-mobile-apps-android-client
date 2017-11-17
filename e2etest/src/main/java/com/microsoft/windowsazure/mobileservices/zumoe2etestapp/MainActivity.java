@@ -65,9 +65,9 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.QueryTests
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.RoundTripTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.SystemPropertiesTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.UpdateDeleteTests;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
