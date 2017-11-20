@@ -22,7 +22,7 @@ package com.microsoft.windowsazure.mobileservices.sdk.testapp.framework.filters;
 import com.microsoft.windowsazure.mobileservices.MobileServiceException;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequest;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
-import com.squareup.okhttp.Headers;
+import okhttp3.Headers;
 
 import java.net.URISyntaxException;
 
