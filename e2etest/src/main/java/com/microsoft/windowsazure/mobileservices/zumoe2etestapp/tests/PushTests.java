@@ -22,12 +22,11 @@ package com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests;
 import android.support.annotation.NonNull;
 import android.util.Pair;
 
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -55,7 +54,6 @@ public class PushTests extends TestGroup {
 
     public static MainActivity mainActivity;
     private static String registrationId;
-    private InstanceID instanceID;
 
     private final static String TOPIC_SPORTS = "topic:Sports";
     private final static String TOPIC_NEWS = "topic:News";
@@ -676,23 +674,14 @@ public class PushTests extends TestGroup {
     }
 
     private String getRegistrationId(MobileServiceClient client) throws IOException {
-        if (instanceID == null) {
-            instanceID = InstanceID.getInstance(client.getContext());
-        }
         if (registrationId == null) {
-            String senderId = mainActivity.getGCMSenderId();
-            registrationId = instanceID.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+            registrationId = FirebaseInstanceId.getInstance().getToken();
         }
         return registrationId;
     }
 
     private void clearRegistrationId() throws IOException {
-        if (instanceID == null || registrationId == null) {
-            return;
-        }
-
         registrationId = null;
-        instanceID.deleteInstanceID();
     }
 
     private ListenableFuture<JsonElement> verifyUnregisterInstallationResult(final MobileServiceClient client) {

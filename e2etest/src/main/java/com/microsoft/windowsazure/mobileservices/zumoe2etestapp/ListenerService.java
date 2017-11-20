@@ -4,18 +4,17 @@
 
 package com.microsoft.windowsazure.mobileservices.zumoe2etestapp;
 
-import android.os.Bundle;
-
-import com.google.android.gms.gcm.GcmListenerService;
+import com.google.firebase.messaging.FirebaseMessagingService;
+import com.google.firebase.messaging.RemoteMessage;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.PushMessageManager;
 
-public class ListenerService extends GcmListenerService {
+public class ListenerService extends FirebaseMessagingService {
 
     @Override
-    public void onMessageReceived(String from, Bundle data) {
-        String message = data.get("message").toString();
+    public void onMessageReceived(RemoteMessage remoteMessage) {
+        String message = remoteMessage.getData().get("message");
         JsonElement msgObj = new JsonParser().parse(message);
         PushMessageManager.instance.AddMessage(msgObj);
     }

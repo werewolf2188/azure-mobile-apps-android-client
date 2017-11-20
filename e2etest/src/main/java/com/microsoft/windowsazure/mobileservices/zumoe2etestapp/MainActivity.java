@@ -81,8 +81,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-@SuppressWarnings("deprecation")
 public class MainActivity extends Activity {
 
     private static Activity mInstance;
@@ -118,12 +116,9 @@ public class MainActivity extends Activity {
             mAutomationPreferences = new HashMap<String, String>();
             mAutomationPreferences.put("pref_run_unattended", extras.getString("pref_run_unattended", ""));
             mAutomationPreferences.put(Constants.PREFERENCE_MOBILE_SERVICE_URL, extras.getString(Constants.PREFERENCE_MOBILE_SERVICE_URL, ""));
-            mAutomationPreferences.put(Constants.PREFERENCE_GOOGLE_USERID, extras.getString(Constants.PREFERENCE_GOOGLE_USERID, ""));
-            mAutomationPreferences.put(Constants.PREFERENCE_GOOGLE_WEBAPP_CLIENTID, extras.getString(Constants.PREFERENCE_GOOGLE_WEBAPP_CLIENTID, ""));
             mAutomationPreferences.put(Constants.PREFERENCE_RUNTIME_VERSION, extras.getString(Constants.PREFERENCE_RUNTIME_VERSION, ""));
             mAutomationPreferences.put(Constants.PREFERENCE_CONTAINER_URL, extras.getString(Constants.PREFERENCE_CONTAINER_URL, ""));
             mAutomationPreferences.put(Constants.PREFERENCE_BASE64_TOKEN, extras.getString(Constants.PREFERENCE_BASE64_TOKEN, ""));
-            mAutomationPreferences.put(Constants.PREFERENCE_GCM_SENDER_ID, extras.getString(Constants.PREFERENCE_GCM_SENDER_ID, ""));
         }
 
         mTestCaseList = (ListView) findViewById(R.id.testCaseList);
@@ -511,18 +506,6 @@ public class MainActivity extends Activity {
 
     private String getStorageRuntime() {
         return this.getPreference(Constants.PREFERENCE_RUNTIME_VERSION);
-    }
-
-    public String getGoogleUserId() {
-        return this.getPreference(Constants.PREFERENCE_GOOGLE_USERID);
-    }
-
-    public String getGCMSenderId() {
-        return this.getPreference(Constants.PREFERENCE_GCM_SENDER_ID);
-    }
-
-    public String getGoogleWebAppClientId() {
-        return this.getPreference(Constants.PREFERENCE_GOOGLE_WEBAPP_CLIENTID);
     }
 
     private boolean shouldRunUnattended() {
