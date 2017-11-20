@@ -28,10 +28,4 @@ public class Constants {
 
     public static final String PREFERENCE_RUNTIME_VERSION = "pref_runtime_version";
 
-    public static final String PREFERENCE_GOOGLE_USERID = "pref_google_userid";
-
-    public static final String PREFERENCE_GOOGLE_WEBAPP_CLIENTID = "pref_google_webapp_clientid";
-
-    public static final String PREFERENCE_GCM_SENDER_ID = "pref_GCM_sender_id";
-
 }
