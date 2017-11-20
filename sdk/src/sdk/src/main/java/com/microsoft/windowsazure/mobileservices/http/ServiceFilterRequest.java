@@ -23,7 +23,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.http;
 
-import com.squareup.okhttp.Headers;
+import okhttp3.Headers;
 
 import java.net.URISyntaxException;
 

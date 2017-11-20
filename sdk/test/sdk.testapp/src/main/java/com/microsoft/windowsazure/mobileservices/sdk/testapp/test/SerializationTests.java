@@ -46,8 +46,8 @@ import com.microsoft.windowsazure.mobileservices.sdk.testapp.test.types.ComplexP
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.test.types.DateTestObject;
 import com.microsoft.windowsazure.mobileservices.sdk.testapp.test.types.ResultsContainer;
 import com.microsoft.windowsazure.mobileservices.table.MobileServiceTable;
-import com.squareup.okhttp.Protocol;
-import com.squareup.okhttp.internal.http.StatusLine;
+import okhttp3.Protocol;
+import okhttp3.internal.http.StatusLine;
 
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;

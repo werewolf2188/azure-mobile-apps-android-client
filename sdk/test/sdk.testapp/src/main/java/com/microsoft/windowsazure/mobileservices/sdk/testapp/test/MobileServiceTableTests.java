@@ -54,9 +54,9 @@ import com.microsoft.windowsazure.mobileservices.table.TableQueryCallback;
 import com.microsoft.windowsazure.mobileservices.table.query.Query;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOperations;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
-import com.squareup.okhttp.Headers;
-import com.squareup.okhttp.Protocol;
-import com.squareup.okhttp.internal.http.StatusLine;
+import okhttp3.Headers;
+import okhttp3.Protocol;
+import okhttp3.internal.http.StatusLine;
 
 import junit.framework.Assert;
 

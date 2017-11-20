@@ -27,9 +27,9 @@ import com.microsoft.windowsazure.mobileservices.http.NextServiceFilterCallback;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilter;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterRequest;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilterResponse;
-import com.squareup.okhttp.Headers;
-import com.squareup.okhttp.Protocol;
-import com.squareup.okhttp.internal.http.StatusLine;
+import okhttp3.Headers;
+import okhttp3.Protocol;
+import okhttp3.internal.http.StatusLine;
 
 public class HttpMetaEchoFilter implements ServiceFilter {
 

@@ -48,7 +48,7 @@ import com.microsoft.windowsazure.mobileservices.table.query.ExecutableJsonQuery
 import com.microsoft.windowsazure.mobileservices.table.query.Query;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryODataWriter;
 import com.microsoft.windowsazure.mobileservices.table.query.QueryOrder;
-import com.squareup.okhttp.Headers;
+import okhttp3.Headers;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
