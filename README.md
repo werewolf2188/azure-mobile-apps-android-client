@@ -60,6 +60,10 @@ The SDK has a suite of unit tests that you can easily run.
 3. Expand `sdk.testapp` and sub folder `java`.
 4. Right click on `com.microsoft.windowsazure.mobileservices.sdk.testapp`, Select `Run`, Select `Tests in com.microsoft.windowsazure.mobileservices.sdk.testapp` (with Android tests icon).
 
+## Future of Azure Mobile Apps
+ 
+Microsoft is committed to fully supporting Azure Mobile Apps, including **support for the latest OS release, bug fixes, documentation improvements, and community PR reviews**. Please note that the product team is **not currently investing in any new feature work** for Azure Mobile Apps. We highly appreciate community contributions to all areas of Azure Mobile Apps. 
+
 ## Useful Resources
 
 * [Quickstarts](https://github.com/Azure/azure-mobile-services-quickstarts)
