@@ -6,24 +6,26 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
-public class NotificationsHandler {
+import com.google.firebase.messaging.FirebaseMessagingService;
+
+public class NotificationsHandler extends FirebaseMessagingService {
 
     /**
      * Method called after the device is registered for notifications
      *
      * @param context           Application context
-     * @param gcmRegistrationId Google Cloud Messaging registration id
+     * @param fcmRegistrationId Firebase Cloud Messaging registration id
      */
-    public void onRegistered(Context context, String gcmRegistrationId) {
+    public void onRegistered(Context context, String fcmRegistrationId) {
     }
 
     /**
      * Method called after the device is unregistered for notifications
      *
      * @param context           Application context
-     * @param gcmRegistrationId Google Cloud Messaging registration id
+     * @param fcmRegistrationId Firebase Cloud Messaging registration id
      */
-    public void onUnregistered(Context context, String gcmRegistrationId) {
+    public void onUnregistered(Context context, String fcmRegistrationId) {
     }
 
     /**
