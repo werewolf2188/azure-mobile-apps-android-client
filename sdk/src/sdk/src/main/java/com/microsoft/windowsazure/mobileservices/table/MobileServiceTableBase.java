@@ -29,6 +29,7 @@ import android.util.Pair;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -576,7 +577,7 @@ abstract class MobileServiceTableBase {
             public void onSuccess(Void v) {
                 callback.onCompleted(null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**

@@ -28,6 +28,7 @@ import android.util.Pair;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -104,7 +105,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
                     future.setException(e);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -134,7 +135,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(MobileServiceList<E> result) {
                 callback.onCompleted(result, result.getTotalCount(), null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -155,7 +156,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(JsonElement result) {
                 processQueryResults(result, future);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -178,7 +179,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(JsonElement result) {
                 processQueryResults(result, future);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -251,7 +252,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(MobileServiceList<E> result) {
                 callback.onCompleted(result, result.size(), null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -386,7 +387,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(E result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -414,7 +415,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
                     future.setException(e);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -445,7 +446,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(E result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -516,7 +517,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
                     future.setException(e);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -548,7 +549,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(E result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -611,7 +612,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
                     future.setException(e);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -642,9 +643,8 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(E result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
-
 
     /**
      * Undelete an entity from a Mobile Service Table
@@ -706,7 +706,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
                     future.setException(e);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -737,7 +737,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(E result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -793,7 +793,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(Void v) {
                 future.set(null);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -823,7 +823,7 @@ public final class MobileServiceTable<E> extends MobileServiceTableBase {
             public void onSuccess(Void v) {
                 callback.onCompleted(null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**

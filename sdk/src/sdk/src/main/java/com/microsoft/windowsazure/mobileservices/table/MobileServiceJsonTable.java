@@ -29,6 +29,7 @@ import android.util.Pair;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -206,7 +207,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
                     future.set(result.first);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -235,7 +236,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
             public void onSuccess(JsonElement result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -415,7 +416,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
                     future.set(patchedJson);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -446,7 +447,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
             public void onSuccess(JsonObject result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -520,7 +521,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
                     future.set(patchedJson);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -553,7 +554,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
             public void onSuccess(JsonObject result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -632,7 +633,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
 
                 future.set(patchedJson);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -663,7 +664,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
             public void onSuccess(JsonObject result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -737,7 +738,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
             public void onSuccess(Pair<JsonObject, ServiceFilterResponse> result) {
                 future.set(null);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -768,7 +769,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
             public void onSuccess(Void v) {
                 callback.onCompleted(null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -843,7 +844,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
 
                 future.set(patchedJson);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -874,7 +875,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
             public void onSuccess(JsonObject result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -929,7 +930,7 @@ public final class MobileServiceJsonTable extends MobileServiceTableBase {
 
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }

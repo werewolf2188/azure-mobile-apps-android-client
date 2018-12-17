@@ -29,6 +29,7 @@ import android.support.customtabs.CustomTabsIntent;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.Gson;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
@@ -316,7 +317,7 @@ public class CustomTabsLoginActivity extends Activity {
             public void onSuccess(MobileServiceUser user) {
                 callback.onCompleted(user, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     protected MobileServiceClient getMobileServiceClient() {

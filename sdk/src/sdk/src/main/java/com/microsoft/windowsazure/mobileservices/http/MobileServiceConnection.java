@@ -28,6 +28,7 @@ import android.os.Build;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.microsoft.windowsazure.mobileservices.MobileServiceApplication;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
@@ -166,7 +167,7 @@ public class MobileServiceConnection {
             public void onSuccess(ServiceFilterResponse response) {
                 responseCallback.onResponse(response, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**

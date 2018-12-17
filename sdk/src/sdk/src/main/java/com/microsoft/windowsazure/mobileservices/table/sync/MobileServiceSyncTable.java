@@ -26,6 +26,7 @@ package com.microsoft.windowsazure.mobileservices.table.sync;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -88,7 +89,7 @@ public class MobileServiceSyncTable<E> {
             public void onSuccess(Void value) {
                 result.set(value);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return result;
     }
@@ -125,7 +126,7 @@ public class MobileServiceSyncTable<E> {
             public void onSuccess(Void value) {
                 future.set(value);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -167,7 +168,7 @@ public class MobileServiceSyncTable<E> {
                     future.setException(e);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -201,7 +202,7 @@ public class MobileServiceSyncTable<E> {
                     future.setException(e);
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -242,7 +243,7 @@ public class MobileServiceSyncTable<E> {
 
                     insertInternal(json, future);
                 }
-            });
+            }, MoreExecutors.directExecutor());
         } else {
             insertInternal(json, future);
         }
@@ -263,7 +264,7 @@ public class MobileServiceSyncTable<E> {
             public void onSuccess(JsonObject result) {
                 finalFuture.set(parseResults(result).get(0));
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -290,7 +291,7 @@ public class MobileServiceSyncTable<E> {
             public void onSuccess(Void value) {
                 future.set(value);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -319,7 +320,7 @@ public class MobileServiceSyncTable<E> {
             public void onSuccess(Void value) {
                 future.set(value);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -346,7 +347,7 @@ public class MobileServiceSyncTable<E> {
             public void onSuccess(Void value) {
                 future.set(value);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
