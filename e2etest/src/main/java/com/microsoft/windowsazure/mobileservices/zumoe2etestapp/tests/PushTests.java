@@ -25,6 +25,7 @@ import android.util.Pair;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.gson.JsonArray;
@@ -98,7 +99,7 @@ public class PushTests extends TestGroup {
             public void onSuccess(JsonElement response) {
                 resultFuture.set(response);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }
@@ -668,7 +669,7 @@ public class PushTests extends TestGroup {
                 resultFuture.set(user);
 
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }
@@ -700,7 +701,7 @@ public class PushTests extends TestGroup {
             public void onSuccess(JsonElement response) {
                 resultFuture.set(response);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }

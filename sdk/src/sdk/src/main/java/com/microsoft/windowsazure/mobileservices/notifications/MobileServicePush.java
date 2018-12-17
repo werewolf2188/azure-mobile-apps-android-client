@@ -27,6 +27,7 @@ import android.util.Pair;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -129,7 +130,7 @@ public class MobileServicePush {
             public void onSuccess(Void v) {
                 resultFuture.set(v);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }
@@ -156,7 +157,7 @@ public class MobileServicePush {
             public void onSuccess(Void v) {
                 callback.onRegister(null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -180,7 +181,7 @@ public class MobileServicePush {
             public void onSuccess(Void v) {
                 resultFuture.set(v);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }
@@ -225,7 +226,7 @@ public class MobileServicePush {
             public void onSuccess(Void v) {
                 resultFuture.set(v);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }
@@ -264,7 +265,7 @@ public class MobileServicePush {
             public void onSuccess(Void v) {
                 callback.onRegister(null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -297,7 +298,7 @@ public class MobileServicePush {
             public void onSuccess(Void v) {
                 callback.onUnregister(null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     private ListenableFuture<Void> deleteInstallation() {
@@ -320,7 +321,7 @@ public class MobileServicePush {
 
                 resultFuture.set(null);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }
@@ -435,7 +436,7 @@ public class MobileServicePush {
 
                 resultFuture.set(null);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }

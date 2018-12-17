@@ -41,6 +41,7 @@ import android.widget.LinearLayout;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -132,7 +133,7 @@ public class LoginManager {
                     callback.onCompleted(null, new Exception(exception), MobileServiceException.getServiceResponse(exception));
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -320,7 +321,7 @@ public class LoginManager {
             public void onSuccess(MobileServiceUser user) {
                 callback.onCompleted(user, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -405,7 +406,7 @@ public class LoginManager {
             public void onSuccess(MobileServiceUser user) {
                 callback.onCompleted(user, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**

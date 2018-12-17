@@ -37,6 +37,7 @@ import android.util.Pair;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
@@ -496,7 +497,7 @@ public class MobileServiceClient {
 
                 resultFuture.set(user);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }
@@ -539,7 +540,7 @@ public class MobileServiceClient {
             public void onSuccess(MobileServiceUser user) {
                 callback.onCompleted(user, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -760,7 +761,7 @@ public class MobileServiceClient {
 
                 resultFuture.set(user);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return resultFuture;
     }
@@ -805,7 +806,7 @@ public class MobileServiceClient {
             public void onSuccess(MobileServiceUser user) {
                 callback.onCompleted(user, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -877,7 +878,7 @@ public class MobileServiceClient {
             public void onSuccess(MobileServiceUser user) {
                 callback.onCompleted(user, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -951,7 +952,7 @@ public class MobileServiceClient {
                                 public void onSuccess(MobileServiceUser user) {
                                     future.set(user);
                                 }
-                            });
+                            }, MoreExecutors.directExecutor());
                         }
                     } catch (Exception e) {
                         future.setException(e);
@@ -996,7 +997,7 @@ public class MobileServiceClient {
             public void onSuccess(MobileServiceUser user) {
                 callback.onCompleted(user, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -1245,7 +1246,7 @@ public class MobileServiceClient {
                     future.set((E) entities.get(0));
                 }
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -1280,7 +1281,7 @@ public class MobileServiceClient {
             public void onSuccess(E result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -1414,7 +1415,7 @@ public class MobileServiceClient {
                 JsonElement json = new JsonParser().parse(content);
                 future.set(json);
             }
-        });
+        }, MoreExecutors.directExecutor());
 
         return future;
     }
@@ -1447,7 +1448,7 @@ public class MobileServiceClient {
             public void onSuccess(JsonElement result) {
                 callback.onCompleted(result, null, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
@@ -1493,7 +1494,7 @@ public class MobileServiceClient {
             public void onSuccess(ServiceFilterResponse result) {
                 callback.onResponse(result, null);
             }
-        });
+        }, MoreExecutors.directExecutor());
     }
 
     /**
