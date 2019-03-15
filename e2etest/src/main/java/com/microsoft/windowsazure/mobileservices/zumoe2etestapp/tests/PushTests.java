@@ -119,8 +119,9 @@ public class PushTests extends TestGroup {
                     this.log("Acquired registrationId:" + registrationId);
 
                     JsonElement deleteChannelResult = deleteRegistrationsForChannel(client, registrationId).get();
-                    if (!deleteChannelResult.isJsonNull()) {
-                        this.log("deleteRegistrationsForChannel failed");
+
+                    if (deleteChannelResult.isJsonNull() || !deleteChannelResult.isJsonObject() || deleteChannelResult.getAsJsonObject().get("result").getAsBoolean() == false ) {
+                        this.log("deleteRegistrationsForChannel failed: " + deleteChannelResult.toString());
                         result.setStatus(TestStatus.Failed);
                         callback.onTestComplete(this, result);
                         return;
