@@ -721,7 +721,7 @@ public class PushTests extends TestGroup {
         bodyJson.add("body", dataJson);
 
         JsonArray tagsJsonArray = new JsonArray();
-        tagsJsonArray.add(new JsonPrimitive("topic:Sports"));
+        tagsJsonArray.add(new JsonPrimitive(TOPIC_SPORTS));
 
         bodyJson.add("tags", tagsJsonArray);
 
