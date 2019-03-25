@@ -20,11 +20,6 @@ public class NotificationsManager {
     private static final String NOTIFICATIONS_HANDLER_CLASS = "WAMS_NotificationsHandlerClass";
 
     /**
-     * Key for registration id in local storage
-     */
-    private static final String FIREBASE_CLOUD_MESSAGING_REGISTRATION_ID = "WAMS_GoogleCloudMessagingRegistrationId";
-
-    /**
      * NotificationsHandler instance
      */
     private static NotificationsHandler mHandler;
