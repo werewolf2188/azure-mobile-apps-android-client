@@ -14,7 +14,7 @@ public class NotificationMessagingService extends FirebaseMessagingService {
         NotificationsHandler handler = NotificationsManager.getHandler(context);
 
         if (handler != null) {
-            handler.onReceive(context, remoteMessage );
+            handler.onReceive(context, remoteMessage);
         }
     }
 
