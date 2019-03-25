@@ -41,7 +41,7 @@ public class NotificationsManager {
             @Override
             protected Void doInBackground(Void... params) {
                 try {
-                    setHandler(notificationsHandlerClass, context);
+                    setHandler(context, notificationsHandlerClass);
 
                     FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
                         @Override
@@ -122,38 +122,12 @@ public class NotificationsManager {
      * @param notificationsHandlerClass NotificationsHandler class
      * @param context                   Application Context
      */
-    private static <T extends NotificationsHandler> void setHandler(Class<T> notificationsHandlerClass, Context context) {
+    private static <T extends NotificationsHandler> void setHandler(Context context, Class<T> notificationsHandlerClass) {
         SharedPreferences prefereneces = PreferenceManager.getDefaultSharedPreferences(context.getApplicationContext());
 
         Editor editor = prefereneces.edit();
         editor.putString(NOTIFICATIONS_HANDLER_CLASS, notificationsHandlerClass.getName());
         editor.commit();
     }
-//
-//    /**
-//     * Retrieves the RegistrationId from local storage
-//     *
-//     * @param context Application Context
-//     */
-//    private static String getRegistrationId(Context context) {
-//        SharedPreferences prefereneces = PreferenceManager.getDefaultSharedPreferences(context.getApplicationContext());
-//
-//        String registrationId = prefereneces.getString(FIREBASE_CLOUD_MESSAGING_REGISTRATION_ID, null);
-//        return registrationId;
-//    }
-//
-//    /**
-//     * Stores the RegistrationId in local storage
-//     *
-//     * @param registrationId RegistrationId to store
-//     * @param context        Application Context
-//     */
-//    private static void setRegistrationId(String registrationId, Context context) {
-//        SharedPreferences prefereneces = PreferenceManager.getDefaultSharedPreferences(context.getApplicationContext());
-//
-//        Editor editor = prefereneces.edit();
-//        editor.putString(FIREBASE_CLOUD_MESSAGING_REGISTRATION_ID, registrationId);
-//        editor.commit();
-//    }
 
 }

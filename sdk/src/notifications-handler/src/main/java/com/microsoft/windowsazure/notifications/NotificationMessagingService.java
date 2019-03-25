@@ -5,7 +5,7 @@ import android.content.Context;
 import com.google.firebase.messaging.RemoteMessage;
 import com.google.firebase.messaging.FirebaseMessagingService;
 
-public class NotificationsBroadcastReceiver extends FirebaseMessagingService {
+public class NotificationMessagingService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
