@@ -21,6 +21,9 @@ package com.microsoft.windowsazure.mobileservices.sdk.testapp.test;
 
 import android.net.Uri;
 import android.test.InstrumentationTestCase;
+//import android.content.Context;
+//import android.support.test.InstrumentationRegistry;
+//import android.support.test.runner.AndroidJUnit4;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonObject;
@@ -48,11 +51,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.concurrent.ExecutionException;
 
+//@RunWith(AndroidJUnit4.class)
 public class PushTests extends InstrumentationTestCase {
 
     final String appUrl = "http://myapp.com/";
     final String pnsApiUrl = "push";
 
+  //  @Test
     public void testUnregister() throws Throwable {
 
         final Container container = new Container();
