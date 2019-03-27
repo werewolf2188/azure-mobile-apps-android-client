@@ -57,8 +57,8 @@ public class PushTests extends TestGroup {
 
     private final static String TOPIC_SPORTS = "topic:Sports";
     private final static String TOPIC_NEWS = "topic:News";
-    private final static String PLATFORM = "gcm";
-    private final static String TEMPLATE_NAME = "GcmTemplate";
+    private final static String PLATFORM = "fcm";
+    private final static String TEMPLATE_NAME = "FcmTemplate";
 
     public PushTests() {
         super("Push tests");
