@@ -11,7 +11,6 @@ public class NotificationsHandler  {
 
     /**
      * Method called when a new token for the default Firebase project is generated.
-     * By default, it shows a toast with the value asociated to the "message" key in the bundle
      *
      * @param token The token used for sending messages to this application instance.
      */
