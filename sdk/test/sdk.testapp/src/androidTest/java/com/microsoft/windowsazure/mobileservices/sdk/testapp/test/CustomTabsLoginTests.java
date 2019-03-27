@@ -24,7 +24,7 @@ import android.net.Uri;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 import android.util.MalformedJsonException;
-
+import android.os.Looper;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonParseException;
@@ -242,6 +242,10 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
     }
 
     public void testPerformCodeExchange() throws Throwable {
+        if (Looper.myLooper() == null)
+        {
+            Looper.prepare();
+        }
         CustomTabsLoginActivityMock customTabsLoginActivityMock = new CustomTabsLoginActivityMock();
 
         CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null, null);
@@ -285,6 +289,10 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
     }
 
     public void testPerformCodeExchangeResponseContainsErrorMessage() throws Throwable {
+        if (Looper.myLooper() == null)
+        {
+            Looper.prepare();
+        }
         CustomTabsLoginActivityMock customTabsLoginActivityMock = new CustomTabsLoginActivityMock();
 
         CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null, null);
@@ -328,6 +336,10 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
     }
 
     public void testPerformCodeExchangeMalformedJsonResponse() throws Throwable {
+        if (Looper.myLooper() == null)
+        {
+            Looper.prepare();
+        }
         CustomTabsLoginActivityMock customTabsLoginActivityMock = new CustomTabsLoginActivityMock();
 
         CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null, null);
@@ -371,18 +383,34 @@ public class CustomTabsLoginTests extends InstrumentationTestCase {
     }
 
     public void testPerformCodeExchangeResponseEmptyJson() throws Throwable {
+        if (Looper.myLooper() == null)
+        {
+            Looper.prepare();
+        }
         this.testPerformCodeExchangeInvalidJsonResponse("{}", "{}");
     }
 
     public void testPerformCodeExchangeResponseMissingUserId() throws Throwable {
+        if (Looper.myLooper() == null)
+        {
+            Looper.prepare();
+        }
         this.testPerformCodeExchangeInvalidJsonResponse("{authenticationToken:'123abc', user:{}}", "userId property expected");
     }
 
     public void testPerformCodeExchangeResponseMissingToken() throws Throwable {
+        if (Looper.myLooper() == null)
+        {
+            Looper.prepare();
+        }
         this.testPerformCodeExchangeInvalidJsonResponse("{user:{userId:'123456'}}", "authenticationToken property expected");
     }
 
     private void testPerformCodeExchangeInvalidJsonResponse(final String jsonResponse, final String expectedErrorMessage) throws Throwable {
+        if (Looper.myLooper() == null)
+        {
+            Looper.prepare();
+        }
         CustomTabsLoginActivityMock customTabsLoginActivityMock = new CustomTabsLoginActivityMock();
 
         CustomTabsLoginState loginState = new CustomTabsLoginState("urlscheme", "codeVerfier", "google", "http://appurl.com", null, null, null);
