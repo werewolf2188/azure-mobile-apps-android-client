@@ -81,6 +81,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.microsoft.windowsazure.notifications.NotificationsManager;
+
 public class MainActivity extends Activity {
 
     private static Activity mInstance;
@@ -143,6 +145,7 @@ public class MainActivity extends Activity {
         });
 
         PushTests.mainActivity = this;
+        NotificationsManager.handleNotifications(getApplicationContext(), ListenerService.class);
 
         refreshTestGroupsAndLog();
     }

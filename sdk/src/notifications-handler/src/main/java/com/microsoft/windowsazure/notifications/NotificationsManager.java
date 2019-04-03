@@ -7,7 +7,10 @@ import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.google.android.gms.gcm.GoogleCloudMessaging;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
+
+import com.google.android.gms.tasks.OnSuccessListener;
 
 public class NotificationsManager {
 
@@ -15,11 +18,6 @@ public class NotificationsManager {
      * Key for handler class name in local storage
      */
     private static final String NOTIFICATIONS_HANDLER_CLASS = "WAMS_NotificationsHandlerClass";
-
-    /**
-     * Key for registration id in local storage
-     */
-    private static final String GOOGLE_CLOUD_MESSAGING_REGISTRATION_ID = "WAMS_GoogleCloudMessagingRegistrationId";
 
     /**
      * NotificationsHandler instance
@@ -30,28 +28,30 @@ public class NotificationsManager {
      * Handles notifications with the provided NotificationsHandler class
      *
      * @param context                   Application Context
-     * @param gcmAppId                  Google Cloud Messaging Application ID
      * @param notificationsHandlerClass NotificationHandler class used for handling notifications
      */
-    public static <T extends NotificationsHandler> void handleNotifications(final Context context, final String gcmAppId, final Class<T> notificationsHandlerClass) {
+    public static <T extends NotificationsHandler> void handleNotifications(final Context context, final Class<T> notificationsHandlerClass) {
 
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
                 try {
-                    setHandler(notificationsHandlerClass, context);
+                    setHandler(context, notificationsHandlerClass);
 
-                    GoogleCloudMessaging gcm = GoogleCloudMessaging.getInstance(context);
+                    FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
+                        @Override
+                        public void onSuccess(InstanceIdResult instanceIdResult) {
 
-                    String registrationId = gcm.register(gcmAppId);
+                            NotificationsHandler handler = getHandler(context);
 
-                    setRegistrationId(registrationId, context);
+                            if (handler != null) {
+                                handler.onRegistered(context);
+                            }
 
-                    NotificationsHandler handler = getHandler(context);
+                        }
+                    });
 
-                    if (handler != null && registrationId != null) {
-                        getHandler(context).onRegistered(context, registrationId);
-                    }
+
                 } catch (Exception e) {
                     Log.e("NotificationsManager", e.toString());
                 }
@@ -72,17 +72,12 @@ public class NotificationsManager {
             @Override
             protected Void doInBackground(Void... params) {
                 try {
-                    GoogleCloudMessaging gcm = GoogleCloudMessaging.getInstance(context);
-                    gcm.unregister();
-
-                    String registrationId = getRegistrationId(context);
-
-                    setRegistrationId(null, context);
+                    FirebaseInstanceId.getInstance().deleteInstanceId();
 
                     NotificationsHandler handler = getHandler(context);
 
-                    if (handler != null && registrationId != null) {
-                        handler.onUnregistered(context, registrationId);
+                    if (handler != null ) {
+                        handler.onUnregistered(context);
                     }
                 } catch (Exception e) {
                     Log.e("NotificationsManager", e.toString());
@@ -117,25 +112,12 @@ public class NotificationsManager {
     }
 
     /**
-     * Retrieves the RegistrationId from local storage
-     *
-     * @param context Application Context
-     */
-    private static String getRegistrationId(Context context) {
-        SharedPreferences prefereneces = PreferenceManager.getDefaultSharedPreferences(context.getApplicationContext());
-
-        String registrationId = prefereneces.getString(GOOGLE_CLOUD_MESSAGING_REGISTRATION_ID, null);
-        return registrationId;
-    }
-
-
-    /**
      * Stores the NotificationsHandler class in local storage
      *
      * @param notificationsHandlerClass NotificationsHandler class
      * @param context                   Application Context
      */
-    private static <T extends NotificationsHandler> void setHandler(Class<T> notificationsHandlerClass, Context context) {
+    private static <T extends NotificationsHandler> void setHandler(Context context, Class<T> notificationsHandlerClass) {
         SharedPreferences prefereneces = PreferenceManager.getDefaultSharedPreferences(context.getApplicationContext());
 
         Editor editor = prefereneces.edit();
@@ -143,17 +125,4 @@ public class NotificationsManager {
         editor.commit();
     }
 
-    /**
-     * Stores the RegistrationId in local storage
-     *
-     * @param registrationId RegistrationId to store
-     * @param context        Application Context
-     */
-    private static void setRegistrationId(String registrationId, Context context) {
-        SharedPreferences prefereneces = PreferenceManager.getDefaultSharedPreferences(context.getApplicationContext());
-
-        Editor editor = prefereneces.edit();
-        editor.putString(GOOGLE_CLOUD_MESSAGING_REGISTRATION_ID, registrationId);
-        editor.commit();
-    }
 }

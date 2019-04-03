@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 26
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '26.0.3'
     defaultConfig {
         applicationId "com.microsoft.windowsazure.mobileservices.zumoe2elogintestapp"
         minSdkVersion 19
@@ -28,7 +28,9 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile project(':sdk')
-    compile 'com.android.support:design:23.0.1'
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.android.support:design:26.1.0'
+    implementation 'com.google.code.gson:gson:2.8.2'
+
+    implementation project(':sdk')
 }

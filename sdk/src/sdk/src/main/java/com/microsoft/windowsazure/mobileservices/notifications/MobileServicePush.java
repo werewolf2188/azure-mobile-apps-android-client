@@ -56,6 +56,7 @@ public class MobileServicePush {
      * Push registration path
      */
     private static final String PNS_API_URL = "push";
+    private static final String PNS_PLATFORM = "fcm";
 
     /**
      * The class used to make HTTP clients associated with this instance
@@ -401,7 +402,7 @@ public class MobileServicePush {
 
         JsonObject installation = new JsonObject();
         installation.addProperty("pushChannel", pnsHandle);
-        installation.addProperty("platform", "gcm");
+        installation.addProperty("platform", PNS_PLATFORM);
 
         if (templates != null) {
             installation.add("templates", templates);

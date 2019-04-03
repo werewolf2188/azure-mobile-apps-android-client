@@ -26,7 +26,7 @@
             android:label="@string/title_activity_zumo_preference" />
 
         <service
-            android:name=".ListenerService">
+            android:name="com.microsoft.windowsazure.notifications.NotificationMessagingService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>

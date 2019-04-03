@@ -58,6 +58,8 @@ public class PushTests extends TestGroup {
 
     private final static String TOPIC_SPORTS = "topic:Sports";
     private final static String TOPIC_NEWS = "topic:News";
+    private final static String PLATFORM =  "fcm";
+    private final static String TEMPLATE_NAME = "FcmTemplate";
 
     public PushTests() {
         super("Push tests");
@@ -118,8 +120,9 @@ public class PushTests extends TestGroup {
                     this.log("Acquired registrationId:" + registrationId);
 
                     JsonElement deleteChannelResult = deleteRegistrationsForChannel(client, registrationId).get();
-                    if (!deleteChannelResult.isJsonNull()) {
-                        this.log("deleteRegistrationsForChannel failed");
+
+                    if (deleteChannelResult.isJsonNull() || !deleteChannelResult.isJsonObject() || deleteChannelResult.getAsJsonObject().get("result").getAsBoolean() == false ) {
+                        this.log("deleteRegistrationsForChannel failed: " + deleteChannelResult.toString());
                         result.setStatus(TestStatus.Failed);
                         callback.onTestComplete(this, result);
                         return;
@@ -315,7 +318,7 @@ public class PushTests extends TestGroup {
                 JsonObject item = new JsonObject();
                 item.addProperty("method", "send");
                 item.addProperty("token", "dummy");
-                item.addProperty("type", "gcm");
+                item.addProperty("type", PLATFORM);
 
                 JsonObject sentPayload = new JsonObject();
 
@@ -397,10 +400,9 @@ public class PushTests extends TestGroup {
                 this.log("Acquired registrationId:" + registrationId);
 
                 String installationId = MobileServiceApplication.getInstallationId(client.getContext());
-                String platform = "gcm";
                 HashMap<String, String> pushVariables = null;
 
-                return new Installation(installationId, platform, registrationId, pushVariables, tags, null);
+                return new Installation(installationId, PLATFORM, registrationId, pushVariables, tags, null);
             }
 
             private boolean sendPushNotification(String tag, MobileServiceClient client, TestExecutionCallback callback, TestResult result) throws InterruptedException, java.util.concurrent.ExecutionException {
@@ -408,7 +410,7 @@ public class PushTests extends TestGroup {
                 JsonObject item = new JsonObject();
                 item.addProperty("method", "send");
                 item.addProperty("token", "dummy");
-                item.addProperty("type", "gcm");
+                item.addProperty("type", PLATFORM);
 
                 JsonObject sentPayload = new JsonObject();
 
@@ -494,15 +496,14 @@ public class PushTests extends TestGroup {
                 String registrationId = getRegistrationId(client);
                 this.log("Acquired registrationId:" + registrationId);
 
-                String platform = "gcm";
                 HashMap<String, String> pushVariables = null;
                 HashMap<String, InstallationTemplate> templates = new HashMap<>();
                 InstallationTemplate template = new InstallationTemplate("{\"data\":{\"message\":{\"user\":\"$(fullName)\"}}}", null);
-                templates.put("GcmTemplate", template);
+                templates.put(TEMPLATE_NAME, template);
 
                 String installationId = MobileServiceApplication.getInstallationId(client.getContext());
 
-                return new Installation(installationId, platform, registrationId, pushVariables, null, templates);
+                return new Installation(installationId, PLATFORM, registrationId, pushVariables, null, templates);
             }
 
             private boolean sendPushNotification(MobileServiceClient client, TestExecutionCallback callback, TestResult result) throws InterruptedException, java.util.concurrent.ExecutionException {
@@ -581,22 +582,21 @@ public class PushTests extends TestGroup {
                 ArrayList<String> tags = new ArrayList<>();
                 tags.add(TOPIC_SPORTS);
 
-                String platform = "gcm";
                 HashMap<String, String> pushVariables = null;
                 HashMap<String, InstallationTemplate> templates = new HashMap<>();
                 InstallationTemplate template = new InstallationTemplate("{\"data\":{\"message\":{\"user\":\"$(fullName)\"}}}", tags);
-                templates.put("GcmTemplate", template);
+                templates.put(TEMPLATE_NAME, template);
 
                 String installationId = MobileServiceApplication.getInstallationId(client.getContext());
 
-                return new Installation(installationId, platform, registrationId, pushVariables, tags, templates);
+                return new Installation(installationId, PLATFORM, registrationId, pushVariables, tags, templates);
             }
 
             private boolean sendPushNotification(MobileServiceClient client, TestExecutionCallback callback, TestResult result) throws InterruptedException, java.util.concurrent.ExecutionException {
                 JsonObject item = new JsonObject();
                 item.addProperty("method", "send");
                 item.addProperty("token", "dummy");
-                item.addProperty("type", "gcm");
+                item.addProperty("type", PLATFORM);
 
                 JsonObject sentPayload = new JsonObject();
 
@@ -681,7 +681,7 @@ public class PushTests extends TestGroup {
         return registrationId;
     }
 
-    private void clearRegistrationId() throws IOException {
+    private void clearRegistrationId() {
         registrationId = null;
     }
 
@@ -707,7 +707,7 @@ public class PushTests extends TestGroup {
     }
 
     private JsonObject GetTemplate() {
-        String templateName = "GcmTemplate";
+        String templateName = TEMPLATE_NAME;
 
         JsonObject userJson = new JsonObject();
         userJson.addProperty("user", "$(fullName)");
@@ -722,7 +722,7 @@ public class PushTests extends TestGroup {
         bodyJson.add("body", dataJson);
 
         JsonArray tagsJsonArray = new JsonArray();
-        tagsJsonArray.add(new JsonPrimitive("topic:Sports"));
+        tagsJsonArray.add(new JsonPrimitive(TOPIC_SPORTS));
 
         bodyJson.add("tags", tagsJsonArray);
 

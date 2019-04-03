@@ -52,6 +52,7 @@ public class PushTests extends InstrumentationTestCase {
 
     final String appUrl = "http://myapp.com/";
     final String pnsApiUrl = "push";
+    final String pnsApiPlatform = "fcm";
 
     public void testUnregister() throws Throwable {
 
@@ -111,7 +112,7 @@ public class PushTests extends InstrumentationTestCase {
         String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
 
         final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\"}";
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\"}";
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
@@ -163,7 +164,7 @@ public class PushTests extends InstrumentationTestCase {
 
         final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
         final String expectedContent =
-                "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":{\"template1\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\"}}}";
+                "{\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\",\"templates\":{\"template1\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\"}}}";
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
 
@@ -214,7 +215,7 @@ public class PushTests extends InstrumentationTestCase {
         String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
 
         final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" + createTemplateObject(true).toString() + "}";
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\",\"templates\":" + createTemplateObject(true).toString() + "}";
 
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
@@ -269,7 +270,7 @@ public class PushTests extends InstrumentationTestCase {
         String installationId = MobileServiceApplication.getInstallationId(getInstrumentation().getTargetContext());
 
         final String expectedUrl = appUrl + pnsApiUrl + "/installations/" + Uri.encode(installationId);
-        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"templates\":" + createTemplateObject(true).toString() + "}";
+        final String expectedContent = "{\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\",\"templates\":" + createTemplateObject(true).toString() + "}";
 
         try {
             client = new MobileServiceClient(appUrl, getInstrumentation().getTargetContext());
@@ -323,10 +324,10 @@ public class PushTests extends InstrumentationTestCase {
         tags.add("topics:my-first-tag");
         tags.add("topics:my-second-tag");
 
-        Installation installation = new Installation(installationId, "gcm", handle, null, tags, null);
+        Installation installation = new Installation(installationId, pnsApiPlatform, handle, null, tags, null);
 
         String expectedContent =
-                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
 
         this.testRegisterInstallation(installation, expectedContent);
     }
@@ -340,10 +341,10 @@ public class PushTests extends InstrumentationTestCase {
         tags.add("topics:my-first-tag");
         tags.add("topics:my-second-tag");
 
-        Installation installation = new Installation(installationId, "gcm", handle, null, tags, null, new Date(), true);
+        Installation installation = new Installation(installationId, pnsApiPlatform, handle, null, tags, null, new Date(), true);
 
         String expectedContent =
-                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}";
 
         this.testRegisterInstallation(installation, expectedContent);
     }
@@ -362,10 +363,10 @@ public class PushTests extends InstrumentationTestCase {
         InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
         templates.put("templateName", template);
 
-        Installation installation = new Installation(installationId, "gcm", handle, pushVariables, tags, templates);
+        Installation installation = new Installation(installationId, pnsApiPlatform, handle, pushVariables, tags, templates);
 
         String expectedContent =
-                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"pushVariables\":{\"key1\":\"value1\",\"key2\":\"value2\"},\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"],\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\",\"expirationTime\":\"\",\"pushVariables\":{\"key1\":\"value1\",\"key2\":\"value2\"},\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"],\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
 
         this.testRegisterInstallation(installation, expectedContent);
     }
@@ -382,10 +383,10 @@ public class PushTests extends InstrumentationTestCase {
         InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
         templates.put("templateName", template);
 
-        Installation installation = new Installation(installationId, "gcm", handle, null, tags, templates);
+        Installation installation = new Installation(installationId, pnsApiPlatform, handle, null, tags, templates);
 
         String expectedContent =
-                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"],\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\",\"expirationTime\":\"\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"],\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
 
         this.testRegisterInstallation(installation, expectedContent);
     }
@@ -402,10 +403,10 @@ public class PushTests extends InstrumentationTestCase {
         InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
         templates.put("templateName", template);
 
-        Installation installation = new Installation(installationId, "gcm", handle, null, null, templates);
+        Installation installation = new Installation(installationId, pnsApiPlatform, handle, null, null, templates);
 
         String expectedContent =
-                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\"gcm\",\"expirationTime\":\"\",\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
+                "{\"installationId\":\"" + installationId + "\",\"pushChannel\":\"handle\",\"platform\":\""+pnsApiPlatform+"\",\"expirationTime\":\"\",\"templates\":{\"templateName\":{\"body\":\"{\\\"data\\\":\\\"abc\\\"}\",\"tags\":[\"topics:my-first-tag\",\"topics:my-second-tag\"]}}}";
 
         this.testRegisterInstallation(installation, expectedContent);
     }
@@ -474,7 +475,7 @@ public class PushTests extends InstrumentationTestCase {
         HashMap<String, InstallationTemplate> templates = new HashMap<>();
         InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
         templates.put("templateName", template);
-        Installation installation = new Installation(installationId, "gcm", null, null, tags, templates);
+        Installation installation = new Installation(installationId, pnsApiPlatform, null, null, tags, templates);
 
         this.testRegisterInstallationOnInvalidInstallation(installation);
     }
@@ -488,7 +489,7 @@ public class PushTests extends InstrumentationTestCase {
         HashMap<String, InstallationTemplate> templates = new HashMap<>();
         InstallationTemplate template = new InstallationTemplate("{\"data\":\"abc\"}", tags);
         templates.put("templateName", template);
-        Installation installation = new Installation(null, "gcm", handle, null, tags, templates);
+        Installation installation = new Installation(null, pnsApiPlatform, handle, null, tags, templates);
 
         this.testRegisterInstallationOnInvalidInstallation(installation);
     }

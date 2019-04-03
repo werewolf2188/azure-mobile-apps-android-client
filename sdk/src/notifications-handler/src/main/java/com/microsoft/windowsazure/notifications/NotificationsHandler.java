@@ -1,29 +1,36 @@
 package com.microsoft.windowsazure.notifications;
 
 import android.content.Context;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
-public class NotificationsHandler {
+import com.google.firebase.messaging.RemoteMessage;
+
+public class NotificationsHandler  {
+
+    /**
+     * Method called when a new token for the default Firebase project is generated.
+     *
+     * @param token The token used for sending messages to this application instance.
+     */
+    public void onNewToken(String token) {
+    }
 
     /**
      * Method called after the device is registered for notifications
      *
      * @param context           Application context
-     * @param gcmRegistrationId Google Cloud Messaging registration id
      */
-    public void onRegistered(Context context, String gcmRegistrationId) {
+    public void onRegistered(Context context) {
     }
 
     /**
      * Method called after the device is unregistered for notifications
      *
      * @param context           Application context
-     * @param gcmRegistrationId Google Cloud Messaging registration id
      */
-    public void onUnregistered(Context context, String gcmRegistrationId) {
+    public void onUnregistered(Context context) {
     }
 
     /**
@@ -31,15 +38,15 @@ public class NotificationsHandler {
      * By default, it shows a toast with the value asociated to the "message" key in the bundle
      *
      * @param context Application Context
-     * @param bundle  Bundle with notification data
+     * @param remoteMessage  RemoteMessage with notification data
      */
-    public void onReceive(final Context context, final Bundle bundle) {
+    public void onReceive(final Context context, final RemoteMessage remoteMessage) {
         Handler h = new Handler(Looper.getMainLooper());
         h.post(new Runnable() {
 
             @Override
             public void run() {
-                Toast.makeText(context, bundle.getString("message"), Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, remoteMessage.toString(), Toast.LENGTH_SHORT).show();
             }
         });
     }
