@@ -55,7 +55,7 @@ public class MobileServicePush {
      * Push registration path
      */
     private static final String PNS_API_URL = "push";
-    private static final String PNS_PLATFORM = "fcm";
+    public static final String PNS_PLATFORM = "fcm";
 
     /**
      * The class used to make HTTP clients associated with this instance
