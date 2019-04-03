@@ -28,6 +28,4 @@ public class NotificationMessagingService extends FirebaseMessagingService {
             handler.onNewToken(token);
         }
     }
-
-
 }
