@@ -52,7 +52,9 @@ public class JsonEntityParser {
             JsonArray elements = results.getAsJsonArray();
 
             for (JsonElement element : elements) {
-                changeIdPropertyName(element.getAsJsonObject(), idPropertyName);
+                if (element.isJsonObject()) {
+                    changeIdPropertyName(element.getAsJsonObject(), idPropertyName);
+                }
                 E typedElement = gson.fromJson(element, clazz);
                 result.add(typedElement);
             }
