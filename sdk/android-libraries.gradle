@@ -2,11 +2,10 @@ apply plugin: 'maven'
 
 def myProject = project
 
+def isCI = project.hasProperty('isCI') ? Boolean.valueOf(isCI) : false
+
 def BINTRAY_USERNAME = "$System.env.BINTRAY_USERNAME"
 def BINTRAY_APIKEY = "$System.env.BINTRAY_APIKEY"
-
-def isCI = project.hasProperty('isCI') ? Boolean.valueOf(isCI) : false
-def repoUrl = isCI ? "file://" + "$System.env.BUILD_ARTIFACTSTAGINGDIRECTORY" : 'https://api.bintray.com/maven/microsoftazuremobile/SDK/Mobile-Apps-Android'
 
 // step 2
 uploadArchives {
@@ -15,7 +14,7 @@ uploadArchives {
         pom.artifactId = PUBLISH_ARTIFACT_ID
         pom.version = myProject.version
         repository (
-            url: repoUrl
+            url: isCI ? "file://" + "$System.env.BUILD_ARTIFACTSTAGINGDIRECTORY" : REPO_URL
         ) {
             authentication(
                 userName: BINTRAY_USERNAME,
