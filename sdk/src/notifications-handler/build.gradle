@@ -4,6 +4,8 @@ ext {
     PUBLISH_ARTIFACT_ID = 'azure-notifications-handler'
 }
 
+group = 'com.microsoft.azure'
+
 android {
     compileSdkVersion 26
     buildToolsVersion '26.0.3'
