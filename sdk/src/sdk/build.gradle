@@ -2,6 +2,7 @@ apply plugin: 'com.android.library'
 
 ext {
     PUBLISH_ARTIFACT_ID = 'azure-mobile-android'
+    REPO_URL = 'https://api.bintray.com/maven/microsoftazuremobile/SDK/Mobile-Apps-Android'
 }
 
 group = 'com.microsoft.azure'

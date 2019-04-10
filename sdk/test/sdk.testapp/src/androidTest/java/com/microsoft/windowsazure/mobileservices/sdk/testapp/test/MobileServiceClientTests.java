@@ -352,7 +352,7 @@ public class MobileServiceClientTests extends InstrumentationTestCase {
                 String userAgentHeader = "User-Agent";
                 String acceptHeader = "Accept";
                 String acceptEncodingHeader = "Accept-Encoding";
-                String versionNumber = "3.4.0";
+                String versionNumber = "3.5.0";
                 String apiVersionNumber = "2.0.0";
 
                 Headers headers = request.getHeaders();
