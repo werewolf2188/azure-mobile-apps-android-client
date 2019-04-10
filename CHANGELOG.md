@@ -1,5 +1,12 @@
 # Azure Mobile Services Android SDK Change Log
 
+### Android SDK: Version 3.5.0
+- Replace OkHttp 2.5.0 with 3.9.0.
+- [#124](https://github.com/Azure/azure-mobile-apps-android-client/pull/124) Migrate a E2E test application to FCM
+- [#139](https://github.com/Azure/azure-mobile-apps-android-client/pull/139) Use addCallback that requires an executor
+- [#137](https://github.com/Azure/azure-mobile-apps-android-client/pull/137) Add Firebase cloud messaging support (removed GCM) for notifications-handler
+- Minor bug fixes and build improvements
+
 ### Android SDK: Version 3.4.0
 - Support for Android 8
 - [#116](https://github.com/Azure/azure-mobile-apps-android-client/pull/116) Allow to specify PullStrategy top higher than 50
