@@ -52,7 +52,7 @@ public class PushTests extends InstrumentationTestCase {
 
     final String appUrl = "http://myapp.com/";
     final String pnsApiUrl = "push";
-    final String pnsApiPlatform = "fcm";
+    final String pnsApiPlatform = "gcm";
 
     public void testUnregister() throws Throwable {
 
