@@ -58,7 +58,7 @@ public class PushTests extends TestGroup {
 
     private final static String TOPIC_SPORTS = "topic:Sports";
     private final static String TOPIC_NEWS = "topic:News";
-    private final static String PLATFORM =  "fcm";
+    private final static String PLATFORM =  "gcm";
     private final static String TEMPLATE_NAME = "FcmTemplate";
 
     public PushTests() {
@@ -333,7 +333,7 @@ public class PushTests extends TestGroup {
 
                 this.log("sending push message:" + sentPayload.toString());
                 client.invokeApi("Push", item).get();
-                if (PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                if (PushMessageManager.instance.isPushMessageReceived(60000, pushContent).get()) {
                     this.log(sentPayload.toString() + " message received");
                     return true;
                 } else {
@@ -429,7 +429,7 @@ public class PushTests extends TestGroup {
                 client.invokeApi("Push", item).get();
 
                 if (tag.equals(TOPIC_SPORTS)) {
-                    if (PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                    if (PushMessageManager.instance.isPushMessageReceived(60000, pushContent).get()) {
                         this.log(sentPayload.toString() + " message received because we registered tag " + tag);
                         return true;
                     } else {
@@ -438,7 +438,7 @@ public class PushTests extends TestGroup {
                         return false;
                     }
                 } else {
-                    if (!PushMessageManager.instance.isPushMessageReceived(10000, pushContent).get()) {
+                    if (!PushMessageManager.instance.isPushMessageReceived(60000, pushContent).get()) {
                         this.log("We shouldn't receive message " + sentPayload.toString() + " because we didn't register tag " + tag);
                         return true;
                     } else {
@@ -522,7 +522,7 @@ public class PushTests extends TestGroup {
                 this.log("sending push message:" + item.toString());
                 client.invokeApi("Push", item).get();
 
-                if (PushMessageManager.instance.isPushMessageReceived(30000, expectedPushMessage).get()) {
+                if (PushMessageManager.instance.isPushMessageReceived(60000, expectedPushMessage).get()) {
                     this.log("push received:" + expectedPushMessage.toString());
                     return true;
                 } else {
@@ -612,7 +612,7 @@ public class PushTests extends TestGroup {
 
                 this.log("sending push message:" + sentPayload.toString() + " with tag " + TOPIC_SPORTS);
                 client.invokeApi("Push", item).get();
-                if (PushMessageManager.instance.isPushMessageReceived(30000, pushContent).get()) {
+                if (PushMessageManager.instance.isPushMessageReceived(60000, pushContent).get()) {
                     this.log(sentPayload.toString() + " message received because we registered tag " + TOPIC_SPORTS);
                     return true;
                 } else {

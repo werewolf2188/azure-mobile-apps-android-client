@@ -35,26 +35,18 @@ public class NotificationsManager {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
-                try {
-                    setHandler(context, notificationsHandlerClass);
+                setHandler(context, notificationsHandlerClass);
 
-                    FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
-                        @Override
-                        public void onSuccess(InstanceIdResult instanceIdResult) {
+                FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
+                    @Override
+                    public void onSuccess(InstanceIdResult instanceIdResult) {
+                    NotificationsHandler handler = getHandler(context);
 
-                            NotificationsHandler handler = getHandler(context);
-
-                            if (handler != null) {
-                                handler.onRegistered(context);
-                            }
-
-                        }
-                    });
-
-
-                } catch (Exception e) {
-                    Log.e("NotificationsManager", e.toString());
-                }
+                    if (handler != null) {
+                        handler.onRegistered(context, instanceIdResult.getToken());
+                    }
+                    }
+                });
 
                 return null;
             }
@@ -62,7 +54,7 @@ public class NotificationsManager {
     }
 
     /**
-     * Stops handlind notifications
+     * Stops handling notifications
      *
      * @param context Application Context
      */
@@ -71,17 +63,23 @@ public class NotificationsManager {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
-                try {
-                    FirebaseInstanceId.getInstance().deleteInstanceId();
+                FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
+                    @Override
+                    public void onSuccess(InstanceIdResult instanceIdResult) {
+                        try {
 
-                    NotificationsHandler handler = getHandler(context);
+                            FirebaseInstanceId.getInstance().deleteInstanceId();
 
-                    if (handler != null ) {
-                        handler.onUnregistered(context);
+                            NotificationsHandler handler = getHandler(context);
+
+                            if (handler != null ) {
+                                handler.onUnregistered(context, instanceIdResult.getToken());
+                            }
+                        } catch (Exception e) {
+                            Log.e("NotificationsManager", e.toString());
+                        }
                     }
-                } catch (Exception e) {
-                    Log.e("NotificationsManager", e.toString());
-                }
+                });
 
                 return null;
             }

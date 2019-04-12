@@ -22,7 +22,7 @@ public class NotificationsHandler  {
      *
      * @param context           Application context
      */
-    public void onRegistered(Context context) {
+    public void onRegistered(Context context, String token) {
     }
 
     /**
@@ -30,7 +30,7 @@ public class NotificationsHandler  {
      *
      * @param context           Application context
      */
-    public void onUnregistered(Context context) {
+    public void onUnregistered(Context context, String token) {
     }
 
     /**
