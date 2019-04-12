@@ -12,6 +12,8 @@ import com.google.firebase.iid.InstanceIdResult;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import java.io.IOException;
+
 public class NotificationsManager {
 
     /**
@@ -40,11 +42,11 @@ public class NotificationsManager {
                 FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
                     @Override
                     public void onSuccess(InstanceIdResult instanceIdResult) {
-                    NotificationsHandler handler = getHandler(context);
+                        NotificationsHandler handler = getHandler(context);
 
-                    if (handler != null) {
-                        handler.onRegistered(context, instanceIdResult.getToken());
-                    }
+                        if (handler != null) {
+                            handler.onRegistered(context, instanceIdResult.getToken());
+                        }
                     }
                 });
 
@@ -75,7 +77,7 @@ public class NotificationsManager {
                             if (handler != null ) {
                                 handler.onUnregistered(context, instanceIdResult.getToken());
                             }
-                        } catch (Exception e) {
+                        } catch (IOException e) {
                             Log.e("NotificationsManager", e.toString());
                         }
                     }
