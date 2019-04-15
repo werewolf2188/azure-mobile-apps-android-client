@@ -1,6 +1,6 @@
 # Azure Mobile Services Android SDK Change Log
 
-### Android SDK: Version 3.5.0
+### Android SDK: Version 3.5.1
 - Replace OkHttp 2.5.0 with 3.9.0.
 - [#124](https://github.com/Azure/azure-mobile-apps-android-client/pull/124) Migrate a E2E test application to FCM
 - [#139](https://github.com/Azure/azure-mobile-apps-android-client/pull/139) Use addCallback that requires an executor
