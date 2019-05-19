@@ -136,7 +136,7 @@ public class MobileServiceHttpClient {
         }
 
         Uri.Builder uriBuilder = Uri.parse(mClient.getAppUrl().toString()).buildUpon();
-        uriBuilder.path(path);
+        uriBuilder.appendEncodedPath(path);
 
         if (parameters != null && parameters.size() > 0) {
             for (Pair<String, String> parameter : parameters) {
